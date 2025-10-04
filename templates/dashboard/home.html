@@ -1,0 +1,480 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Drought Warning System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="mb-0">
+            <i class="fas fa-tachometer-alt me-2"></i>
+            Drought Monitoring Dashboard
+        </h1>
+        <p class="text-muted">Real-time drought risk assessment and agricultural monitoring</p>
+    </div>
+</div>
+
+<!-- Key Metrics Row -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-primary">{{ total_regions }}</div>
+            <div class="metric-label">Monitored Regions</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-success">{{ total_farmers }}</div>
+            <div class="metric-label">Registered Farmers</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-warning">{{ recent_alerts }}</div>
+            <div class="metric-label">Alerts (7 days)</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-value text-info" id="current-risk-regions">0</div>
+            <div class="metric-label">High Risk Regions</div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Row -->
+<div class="row">
+    <!-- Risk Overview Chart -->
+    <div class="col-lg-8 mb-4">
+        <div class="chart-container">
+            <h5 class="mb-3">
+                <i class="fas fa-chart-line me-2"></i>
+                Drought Risk Trends (Last 30 Days)
+            </h5>
+            <canvas id="riskTrendsChart" height="300"></canvas>
+        </div>
+    </div>
+    
+    <!-- Risk Summary -->
+    <div class="col-lg-4 mb-4">
+        <div class="sidebar">
+            <h5 class="mb-3">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Current Risk Summary
+            </h5>
+            <div id="riskSummary">
+                <div class="d-flex justify-content-center">
+                    <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Second Row -->
+<div class="row">
+    <!-- NDVI and Soil Moisture Trends -->
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container">
+            <h5 class="mb-3">
+                <i class="fas fa-seedling me-2"></i>
+                NDVI Trends
+            </h5>
+            <canvas id="ndviChart" height="250"></canvas>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container">
+            <h5 class="mb-3">
+                <i class="fas fa-tint me-2"></i>
+                Soil Moisture Trends
+            </h5>
+            <canvas id="soilMoistureChart" height="250"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts and High Risk Regions -->
+<div class="row">
+    <!-- Recent Alerts -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bell me-2"></i>
+                    Recent Alerts
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_alert_list %}
+                    {% for alert in recent_alert_list %}
+                        <div class="alert-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">{{ alert.title }}</h6>
+                                    <p class="mb-1 text-muted">{{ alert.message|truncatewords:20 }}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ alert.region.name }}
+                                        <i class="fas fa-clock ms-3 me-1"></i>{{ alert.created_at|timesince }} ago
+                                    </small>
+                                </div>
+                                <span class="badge bg-{{ alert.severity_level }}">{{ alert.get_severity_level_display }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-bell-slash fa-3x mb-3"></i>
+                        <p>No recent alerts</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- High Risk Regions -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    High Risk Regions
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if high_risk_regions %}
+                    {% for assessment in high_risk_regions %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-1">{{ assessment.region.name }}</h6>
+                                <small class="text-muted">Score: {{ assessment.risk_score|floatformat:1 }}</small>
+                            </div>
+                            <span class="risk-badge risk-{{ assessment.risk_level }}">
+                                {{ assessment.get_risk_level_display }}
+                            </span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-check-circle fa-3x mb-3"></i>
+                        <p>No high risk regions</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Regional Summary Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>
+                    Regional Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="regionalSummaryTable">
+                        <thead>
+                            <tr>
+                                <th>Region</th>
+                                <th>Risk Level</th>
+                                <th>Risk Score</th>
+                                <th>Farmers</th>
+                                <th>Recent Alerts</th>
+                                <th>Last Assessment</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize charts and load data
+    loadDashboardData();
+    loadRiskTrends();
+    loadNDVITrends();
+    loadSoilMoistureTrends();
+    loadRegionalSummary();
+});
+
+function loadDashboardData() {
+    // Update risk summary from backend data
+    const riskSummary = {{ risk_summary|safe }};
+    displayRiskSummary(riskSummary);
+    
+    // Update high risk regions count
+    const highRiskCount = {{ high_risk_regions|length }};
+    document.getElementById('current-risk-regions').textContent = highRiskCount;
+}
+
+function displayRiskSummary(riskSummary) {
+    const container = document.getElementById('riskSummary');
+    
+    if (Object.keys(riskSummary).length === 0) {
+        container.innerHTML = '<div class="text-center text-muted">No risk data available</div>';
+        return;
+    }
+    
+    let html = '';
+    const riskLevels = ['extreme', 'very_high', 'high', 'moderate', 'low', 'very_low'];
+    const riskLabels = {
+        'extreme': 'Extreme',
+        'very_high': 'Very High',
+        'high': 'High',
+        'moderate': 'Moderate',
+        'low': 'Low',
+        'very_low': 'Very Low'
+    };
+    
+    riskLevels.forEach(level => {
+        const count = riskSummary[level] || 0;
+        if (count > 0) {
+            html += `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="risk-badge risk-${level}">${riskLabels[level]}</span>
+                    <span class="fw-bold">${count} regions</span>
+                </div>
+            `;
+        }
+    });
+    
+    container.innerHTML = html || '<div class="text-center text-muted">No regions assessed</div>';
+}
+
+function loadRiskTrends() {
+    axios.get('/dashboard/api/risk-trends/?days=30')
+        .then(response => {
+            const data = response.data;
+            createRiskTrendsChart(data.risk_trends);
+        })
+        .catch(error => {
+            console.error('Error loading risk trends:', error);
+            showError('riskTrendsChart', 'Failed to load risk trends data');
+        });
+}
+
+function createRiskTrendsChart(riskTrends) {
+    const ctx = document.getElementById('riskTrendsChart').getContext('2d');
+    
+    // Prepare data for Chart.js
+    const dates = Object.keys(riskTrends).sort();
+    const datasets = [];
+    const riskLevels = ['extreme', 'very_high', 'high', 'moderate', 'low', 'very_low'];
+    
+    riskLevels.forEach(level => {
+        const data = dates.map(date => riskTrends[date][level] || 0);
+        datasets.push({
+            label: level.replace('_', ' ').toUpperCase(),
+            data: data,
+            backgroundColor: getRiskColor(level),
+            borderColor: getRiskColor(level),
+            borderWidth: 2,
+            fill: false
+        });
+    });
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dates.map(date => formatDate(date)),
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Regions'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            }
+        }
+    });
+}
+
+function loadNDVITrends() {
+    axios.get('/dashboard/api/ndvi-trends/?days=30')
+        .then(response => {
+            const data = response.data;
+            createNDVIChart(data.trends);
+        })
+        .catch(error => {
+            console.error('Error loading NDVI trends:', error);
+            showError('ndviChart', 'Failed to load NDVI trends data');
+        });
+}
+
+function createNDVIChart(trends) {
+    const ctx = document.getElementById('ndviChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: trends.map(item => formatDate(item.date)),
+            datasets: [{
+                label: 'Average NDVI',
+                data: trends.map(item => item.value),
+                backgroundColor: 'rgba(125, 176, 105, 0.2)',
+                borderColor: COLORS.light,
+                borderWidth: 2,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 1,
+                    title: {
+                        display: true,
+                        text: 'NDVI Value'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function loadSoilMoistureTrends() {
+    axios.get('/dashboard/api/soil-moisture-trends/?days=30')
+        .then(response => {
+            const data = response.data;
+            createSoilMoistureChart(data.trends);
+        })
+        .catch(error => {
+            console.error('Error loading soil moisture trends:', error);
+            showError('soilMoistureChart', 'Failed to load soil moisture trends data');
+        });
+}
+
+function createSoilMoistureChart(trends) {
+    const ctx = document.getElementById('soilMoistureChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: trends.map(item => formatDate(item.date)),
+            datasets: [{
+                label: 'Average Soil Moisture',
+                data: trends.map(item => item.value),
+                backgroundColor: 'rgba(23, 162, 184, 0.2)',
+                borderColor: '#17a2b8',
+                borderWidth: 2,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Moisture Percentage'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function loadRegionalSummary() {
+    axios.get('/dashboard/api/regional-summary/')
+        .then(response => {
+            const data = response.data.regional_summary;
+            populateRegionalSummaryTable(data);
+        })
+        .catch(error => {
+            console.error('Error loading regional summary:', error);
+            document.getElementById('regionalSummaryTable').querySelector('tbody').innerHTML = 
+                '<tr><td colspan="7" class="text-center text-danger">Failed to load regional data</td></tr>';
+        });
+}
+
+function populateRegionalSummaryTable(data) {
+    const tbody = document.getElementById('regionalSummaryTable').querySelector('tbody');
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No regional data available</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    data.forEach(region => {
+        html += `
+            <tr>
+                <td>
+                    <strong>${region.region_name}</strong>
+                </td>
+                <td>
+                    <span class="risk-badge risk-${region.risk_level}">
+                        ${region.risk_level.replace('_', ' ').toUpperCase()}
+                    </span>
+                </td>
+                <td>${region.risk_score.toFixed(1)}</td>
+                <td>${region.farmer_count}</td>
+                <td>
+                    ${region.recent_alerts > 0 ? 
+                        `<span class="badge bg-warning">${region.recent_alerts}</span>` : 
+                        '<span class="text-muted">0</span>'
+                    }
+                </td>
+                <td>
+                    ${region.assessment_date ? 
+                        formatDate(region.assessment_date) : 
+                        '<span class="text-muted">No data</span>'
+                    }
+                </td>
+                <td>
+                    <a href="/dashboard/map/?region=${region.region_id}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye"></i> View
+                    </a>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+</script>
+{% endblock %}

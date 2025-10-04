@@ -1,0 +1,1 @@
+# USSD Django app for feature phone access to drought information

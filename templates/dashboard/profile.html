@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Drought Warning System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="mb-0">
+            <i class="fas fa-user me-2"></i>
+            User Profile
+        </h1>
+        <p class="text-muted">Manage your account settings and preferences</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'dashboard:home' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>
+                    Edit Profile
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-muted mb-3">Basic Information</h6>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name" 
+                                   value="{{ user.first_name }}" placeholder="Enter first name">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name" 
+                                   value="{{ user.last_name }}" placeholder="Enter last name">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" class="form-control" name="email" 
+                                   value="{{ user.email }}" placeholder="Enter email address">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" name="phone_number" 
+                                   value="{{ user_profile.phone_number }}" placeholder="Enter phone number">
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Profile Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-muted mb-3">Profile Information</h6>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">User Type</label>
+                            <select class="form-select" name="user_type">
+                                <option value="farmer" {% if user_profile.user_type == 'farmer' %}selected{% endif %}>
+                                    Farmer
+                                </option>
+                                <option value="extension_officer" {% if user_profile.user_type == 'extension_officer' %}selected{% endif %}>
+                                    Extension Officer
+                                </option>
+                                {% if user.is_staff %}
+                                    <option value="admin" {% if user_profile.user_type == 'admin' %}selected{% endif %}>
+                                        Administrator
+                                    </option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Region</label>
+                            <select class="form-select" name="region">
+                                <option value="">Select Region</option>
+                                {% for region in regions %}
+                                    <option value="{{ region.id }}" 
+                                            {% if user_profile.region.id == region.id %}selected{% endif %}>
+                                        {{ region.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Account Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Account Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label class="form-label text-muted">Username</label>
+                        <div class="fw-bold">{{ user.username }}</div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label text-muted">Member Since</label>
+                        <div class="fw-bold">{{ user.date_joined|date:"M d, Y" }}</div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label text-muted">Last Login</label>
+                        <div class="fw-bold">
+                            {% if user.last_login %}
+                                {{ user.last_login|date:"M d, Y H:i" }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label text-muted">Account Status</label>
+                        <div>
+                            {% if user.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                            
+                            {% if user.is_staff %}
+                                <span class="badge bg-primary">Staff</span>
+                            {% endif %}
+                            
+                            {% if user.is_superuser %}
+                                <span class="badge bg-warning">Superuser</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog me-2"></i>
+                    Account Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'dashboard:logout' %}" class="btn btn-outline-danger">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </a>
+                </div>
+                
+                {% if user.is_staff %}
+                    <hr>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'dashboard:admin_users' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-users me-2"></i>Manage Users
+                        </a>
+                        <a href="/admin/" class="btn btn-outline-secondary" target="_blank">
+                            <i class="fas fa-tools me-2"></i>Django Admin
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

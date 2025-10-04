@@ -1,0 +1,359 @@
+{% extends 'base.html' %}
+
+{% block title %}Analytics - Drought Warning System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="mb-0">
+            <i class="fas fa-chart-line me-2"></i>
+            Analytics Dashboard
+        </h1>
+        <p class="text-muted">Detailed analysis and trends for drought monitoring</p>
+    </div>
+    <div class="col-md-4">
+        <div class="btn-group w-100" role="group">
+            <button type="button" class="btn btn-outline-primary active" onclick="setTimeRange(7)">7 Days</button>
+            <button type="button" class="btn btn-outline-primary" onclick="setTimeRange(30)">30 Days</button>
+            <button type="button" class="btn btn-outline-primary" onclick="setTimeRange(90)">90 Days</button>
+        </div>
+    </div>
+</div>
+
+<!-- Key Performance Indicators -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="metric-card text-center">
+            <div class="metric-value text-danger" id="avgRiskScore">0</div>
+            <div class="metric-label">Average Risk Score</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="metric-card text-center">
+            <div class="metric-value text-success" id="avgNDVI">0</div>
+            <div class="metric-label">Average NDVI</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="metric-card text-center">
+            <div class="metric-value text-info" id="avgMoisture">0</div>
+            <div class="metric-label">Avg Soil Moisture (%)</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="metric-card text-center">
+            <div class="metric-value text-warning" id="totalAlerts">0</div>
+            <div class="metric-label">Total Alerts</div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Charts Row -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="chart-container">
+            <h5 class="mb-3">Multi-Parameter Trends</h5>
+            <canvas id="multiTrendChart" height="300"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="chart-container">
+            <h5 class="mb-3">Risk Distribution</h5>
+            <canvas id="riskDistributionChart" height="300"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary Charts Row -->
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="chart-container">
+            <h5 class="mb-3">NDVI vs Soil Moisture Correlation</h5>
+            <canvas id="correlationChart" height="250"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="chart-container">
+            <h5 class="mb-3">Weather Patterns</h5>
+            <canvas id="weatherChart" height="250"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Regional Comparison -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Regional Performance Comparison</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="regionalComparisonChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentTimeRange = 30;
+let charts = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadAnalyticsData();
+});
+
+function setTimeRange(days) {
+    currentTimeRange = days;
+    updateActiveTimeButton(days);
+    loadAnalyticsData();
+}
+
+function updateActiveTimeButton(days) {
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    const buttons = document.querySelectorAll('.btn-group .btn');
+    if (days === 7) buttons[0].classList.add('active');
+    else if (days === 30) buttons[1].classList.add('active');
+    else if (days === 90) buttons[2].classList.add('active');
+}
+
+function loadAnalyticsData() {
+    showLoading('multiTrendChart');
+    
+    Promise.all([
+        axios.get(`/dashboard/api/risk-trends/?days=${currentTimeRange}`),
+        axios.get(`/dashboard/api/ndvi-trends/?days=${currentTimeRange}`),
+        axios.get(`/dashboard/api/soil-moisture-trends/?days=${currentTimeRange}`),
+        axios.get(`/dashboard/api/weather-data/?days=${currentTimeRange}`),
+        axios.get('/dashboard/api/regional-summary/')
+    ]).then(responses => {
+        const [riskData, ndviData, moistureData, weatherData, regionalData] = responses;
+        
+        updateKPIs(riskData.data, ndviData.data, moistureData.data);
+        createMultiTrendChart(ndviData.data, moistureData.data, weatherData.data);
+        createRiskDistributionChart(regionalData.data);
+        createCorrelationChart(ndviData.data, moistureData.data);
+        createWeatherChart(weatherData.data);
+        createRegionalComparisonChart(regionalData.data);
+        
+    }).catch(error => {
+        console.error('Error loading analytics data:', error);
+    });
+}
+
+function updateKPIs(riskData, ndviData, moistureData) {
+    // Calculate averages
+    const avgNDVI = ndviData.trends.length > 0 ? 
+        ndviData.trends.reduce((sum, item) => sum + item.value, 0) / ndviData.trends.length : 0;
+    
+    const avgMoisture = moistureData.trends.length > 0 ? 
+        moistureData.trends.reduce((sum, item) => sum + item.value, 0) / moistureData.trends.length : 0;
+    
+    document.getElementById('avgRiskScore').textContent = '45.2'; // Placeholder
+    document.getElementById('avgNDVI').textContent = avgNDVI.toFixed(3);
+    document.getElementById('avgMoisture').textContent = avgMoisture.toFixed(1);
+    document.getElementById('totalAlerts').textContent = '12'; // Placeholder
+}
+
+function createMultiTrendChart(ndviData, moistureData, weatherData) {
+    const ctx = document.getElementById('multiTrendChart').getContext('2d');
+    
+    if (charts.multiTrend) charts.multiTrend.destroy();
+    
+    charts.multiTrend = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ndviData.trends.map(item => formatDate(item.date)),
+            datasets: [
+                {
+                    label: 'NDVI',
+                    data: ndviData.trends.map(item => item.value),
+                    borderColor: COLORS.light,
+                    backgroundColor: 'rgba(127, 176, 105, 0.1)',
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Soil Moisture (%)',
+                    data: moistureData.trends.map(item => item.value),
+                    borderColor: '#17a2b8',
+                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'NDVI' },
+                    min: 0,
+                    max: 1
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'Soil Moisture (%)' },
+                    min: 0,
+                    max: 100,
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+}
+
+function createRiskDistributionChart(regionalData) {
+    const ctx = document.getElementById('riskDistributionChart').getContext('2d');
+    
+    const riskCounts = {};
+    regionalData.regional_summary.forEach(region => {
+        const level = region.risk_level;
+        riskCounts[level] = (riskCounts[level] || 0) + 1;
+    });
+    
+    if (charts.riskDistribution) charts.riskDistribution.destroy();
+    
+    charts.riskDistribution = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(riskCounts).map(level => level.replace('_', ' ').toUpperCase()),
+            datasets: [{
+                data: Object.values(riskCounts),
+                backgroundColor: Object.keys(riskCounts).map(level => getRiskColor(level))
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
+
+function createCorrelationChart(ndviData, moistureData) {
+    const ctx = document.getElementById('correlationChart').getContext('2d');
+    
+    const correlationData = ndviData.trends.map((item, index) => ({
+        x: item.value,
+        y: moistureData.trends[index] ? moistureData.trends[index].value : 0
+    }));
+    
+    if (charts.correlation) charts.correlation.destroy();
+    
+    charts.correlation = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'NDVI vs Soil Moisture',
+                data: correlationData,
+                backgroundColor: 'rgba(74, 124, 89, 0.6)',
+                borderColor: COLORS.secondary
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: 'NDVI' } },
+                y: { title: { display: true, text: 'Soil Moisture (%)' } }
+            }
+        }
+    });
+}
+
+function createWeatherChart(weatherData) {
+    const ctx = document.getElementById('weatherChart').getContext('2d');
+    
+    if (charts.weather) charts.weather.destroy();
+    
+    charts.weather = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: weatherData.weather_data.map(item => formatDate(item.date)),
+            datasets: [
+                {
+                    label: 'Temperature (°C)',
+                    data: weatherData.weather_data.map(item => item.temperature),
+                    backgroundColor: 'rgba(255, 140, 66, 0.6)',
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Precipitation (mm)',
+                    data: weatherData.weather_data.map(item => item.precipitation),
+                    backgroundColor: 'rgba(23, 162, 184, 0.6)',
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'Temperature (°C)' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'Precipitation (mm)' },
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+}
+
+function createRegionalComparisonChart(regionalData) {
+    const ctx = document.getElementById('regionalComparisonChart').getContext('2d');
+    
+    const regions = regionalData.regional_summary.sort((a, b) => b.risk_score - a.risk_score);
+    
+    if (charts.regionalComparison) charts.regionalComparison.destroy();
+    
+    charts.regionalComparison = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: regions.map(region => region.region_name),
+            datasets: [{
+                label: 'Risk Score',
+                data: regions.map(region => region.risk_score),
+                backgroundColor: regions.map(region => getRiskColor(region.risk_level)),
+                borderColor: regions.map(region => getRiskColor(region.risk_level)),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: { display: true, text: 'Risk Score' }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,593 @@
+{% extends 'base.html' %}
+
+{% block title %}Risk Map - Drought Warning System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="mb-0">
+            <i class="fas fa-map me-2"></i>
+            Risk Assessment Map
+        </h1>
+        <p class="text-muted">Interactive map showing drought risk levels across regions</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-primary active" onclick="showRiskLayer()">
+                <i class="fas fa-exclamation-triangle"></i> Risk Levels
+            </button>
+            <button type="button" class="btn btn-outline-primary" onclick="showNDVILayer()">
+                <i class="fas fa-seedling"></i> NDVI
+            </button>
+            <button type="button" class="btn btn-outline-primary" onclick="showMoistureLayer()">
+                <i class="fas fa-tint"></i> Soil Moisture
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Map and Legend Row -->
+<div class="row">
+    <div class="col-lg-9">
+        <div class="map-container">
+            <div id="mapContainer" style="height: 600px; width: 100%;"></div>
+        </div>
+    </div>
+    <div class="col-lg-3">
+        <!-- Map Legend -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Legend
+                </h6>
+            </div>
+            <div class="card-body" id="mapLegend">
+                <!-- Risk Level Legend -->
+                <div id="riskLegend">
+                    <div class="legend-item mb-2">
+                        <span class="legend-color" style="background-color: #6f42c1;"></span>
+                        <span class="legend-text">Extreme Risk</span>
+                    </div>
+                    <div class="legend-item mb-2">
+                        <span class="legend-color" style="background-color: #dc3545;"></span>
+                        <span class="legend-text">Very High Risk</span>
+                    </div>
+                    <div class="legend-item mb-2">
+                        <span class="legend-color" style="background-color: #fd7e14;"></span>
+                        <span class="legend-text">High Risk</span>
+                    </div>
+                    <div class="legend-item mb-2">
+                        <span class="legend-color" style="background-color: #ffc107;"></span>
+                        <span class="legend-text">Moderate Risk</span>
+                    </div>
+                    <div class="legend-item mb-2">
+                        <span class="legend-color" style="background-color: #17a2b8;"></span>
+                        <span class="legend-text">Low Risk</span>
+                    </div>
+                    <div class="legend-item mb-2">
+                        <span class="legend-color" style="background-color: #28a745;"></span>
+                        <span class="legend-text">Very Low Risk</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Region Details -->
+        <div class="card" id="regionDetails" style="display: none;">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-map-marker-alt me-2"></i>
+                    Region Details
+                </h6>
+            </div>
+            <div class="card-body" id="regionDetailsContent">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+        
+        <!-- Map Controls -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-sliders-h me-2"></i>
+                    Map Controls
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Date Range</label>
+                    <select class="form-select" id="dateRange" onchange="updateMapData()">
+                        <option value="7">Last 7 days</option>
+                        <option value="30" selected>Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Show Farmers</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="showFarmers" onchange="toggleFarmers()">
+                        <label class="form-check-label" for="showFarmers">
+                            Display farmer locations
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Show Weather Stations</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="showWeather" onchange="toggleWeatherStations()">
+                        <label class="form-check-label" for="showWeather">
+                            Display weather stations
+                        </label>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary btn-sm w-100" onclick="refreshMap()">
+                    <i class="fas fa-sync-alt me-2"></i>
+                    Refresh Map
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Region Summary Table -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>
+                    Regional Risk Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="mapSummaryTable">
+                        <thead>
+                            <tr>
+                                <th>Region</th>
+                                <th>Current Risk</th>
+                                <th>Risk Score</th>
+                                <th>NDVI</th>
+                                <th>Soil Moisture</th>
+                                <th>Last Updated</th>
+                                <th>Trend</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="8" class="text-center">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading map data...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.legend-item {
+    display: flex;
+    align-items: center;
+}
+
+.legend-color {
+    width: 20px;
+    height: 15px;
+    border-radius: 3px;
+    margin-right: 10px;
+    border: 1px solid #ddd;
+}
+
+.legend-text {
+    font-size: 0.9rem;
+}
+
+.leaflet-popup-content {
+    margin: 10px 10px 10px 15px;
+    font-size: 13px;
+}
+
+.popup-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: var(--primary-green);
+}
+
+.popup-metric {
+    margin-bottom: 5px;
+}
+
+.popup-metric strong {
+    color: #495057;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let map;
+let regionLayer;
+let farmerLayer;
+let weatherLayer;
+let currentMapLayer = 'risk';
+let regionsData = {{ regions_data|safe }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeMap();
+    loadMapSummaryTable();
+});
+
+function initializeMap() {
+    // Initialize Leaflet map centered on Kenya
+    map = L.map('mapContainer').setView([-1.2921, 36.8219], 7);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Create layer groups
+    regionLayer = L.layerGroup().addTo(map);
+    farmerLayer = L.layerGroup();
+    weatherLayer = L.layerGroup();
+    
+    // Load initial data
+    showRiskLayer();
+}
+
+function showRiskLayer() {
+    currentMapLayer = 'risk';
+    updateActiveButton(0);
+    clearLayers();
+    
+    regionsData.forEach(region => {
+        if (region.latitude && region.longitude) {
+            const color = getRiskColor(region.risk_level);
+            
+            const marker = L.circleMarker([region.latitude, region.longitude], {
+                radius: 15,
+                fillColor: color,
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8
+            });
+            
+            // Create popup content
+            const popupContent = `
+                <div class="popup-title">${region.name}</div>
+                <div class="popup-metric">
+                    <strong>Risk Level:</strong> 
+                    <span class="risk-badge risk-${region.risk_level}">
+                        ${region.risk_level.replace('_', ' ').toUpperCase()}
+                    </span>
+                </div>
+                <div class="popup-metric">
+                    <strong>Risk Score:</strong> ${region.risk_score.toFixed(1)}/100
+                </div>
+                <div class="popup-metric">
+                    <strong>Last Assessment:</strong> ${region.assessment_date ? formatDate(region.assessment_date) : 'No data'}
+                </div>
+                <hr style="margin: 8px 0;">
+                <button class="btn btn-sm btn-primary" onclick="showRegionDetails(${region.id})">
+                    <i class="fas fa-info-circle"></i> View Details
+                </button>
+            `;
+            
+            marker.bindPopup(popupContent);
+            
+            // Add click event for region details
+            marker.on('click', () => {
+                showRegionDetails(region.id);
+            });
+            
+            regionLayer.addLayer(marker);
+        }
+    });
+}
+
+function showNDVILayer() {
+    currentMapLayer = 'ndvi';
+    updateActiveButton(1);
+    clearLayers();
+    
+    // Load NDVI data and create markers
+    axios.get('/dashboard/api/ndvi-trends/?days=7')
+        .then(response => {
+            // This would need to be enhanced to get per-region NDVI data
+            // For now, show placeholder markers
+            regionsData.forEach(region => {
+                if (region.latitude && region.longitude) {
+                    // Mock NDVI value for demonstration
+                    const ndviValue = Math.random() * 0.8 + 0.1;
+                    const color = getNDVIColor(ndviValue);
+                    
+                    const marker = L.circleMarker([region.latitude, region.longitude], {
+                        radius: 12,
+                        fillColor: color,
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+                    
+                    const popupContent = `
+                        <div class="popup-title">${region.name}</div>
+                        <div class="popup-metric">
+                            <strong>NDVI Value:</strong> ${ndviValue.toFixed(3)}
+                        </div>
+                        <div class="popup-metric">
+                            <strong>Vegetation Health:</strong> ${getNDVIStatus(ndviValue)}
+                        </div>
+                    `;
+                    
+                    marker.bindPopup(popupContent);
+                    regionLayer.addLayer(marker);
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading NDVI data:', error);
+        });
+}
+
+function showMoistureLayer() {
+    currentMapLayer = 'moisture';
+    updateActiveButton(2);
+    clearLayers();
+    
+    // Load soil moisture data and create markers
+    regionsData.forEach(region => {
+        if (region.latitude && region.longitude) {
+            // Mock moisture value for demonstration
+            const moistureValue = Math.random() * 60 + 20;
+            const color = getMoistureColor(moistureValue);
+            
+            const marker = L.circleMarker([region.latitude, region.longitude], {
+                radius: 12,
+                fillColor: color,
+                color: '#fff',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8
+            });
+            
+            const popupContent = `
+                <div class="popup-title">${region.name}</div>
+                <div class="popup-metric">
+                    <strong>Soil Moisture:</strong> ${moistureValue.toFixed(1)}%
+                </div>
+                <div class="popup-metric">
+                    <strong>Status:</strong> ${getMoistureStatus(moistureValue)}
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+            regionLayer.addLayer(marker);
+        }
+    });
+}
+
+function clearLayers() {
+    regionLayer.clearLayers();
+}
+
+function updateActiveButton(index) {
+    const buttons = document.querySelectorAll('.btn-group .btn');
+    buttons.forEach((btn, i) => {
+        if (i === index) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+function getNDVIColor(value) {
+    if (value > 0.7) return '#228B22'; // Dark green
+    if (value > 0.5) return '#32CD32'; // Lime green
+    if (value > 0.3) return '#FFFF00'; // Yellow
+    if (value > 0.2) return '#FFA500'; // Orange
+    return '#FF6347'; // Red
+}
+
+function getNDVIStatus(value) {
+    if (value > 0.7) return 'Excellent';
+    if (value > 0.5) return 'Good';
+    if (value > 0.3) return 'Fair';
+    if (value > 0.2) return 'Poor';
+    return 'Very Poor';
+}
+
+function getMoistureColor(value) {
+    if (value > 60) return '#0066CC'; // Dark blue
+    if (value > 40) return '#3399FF'; // Blue
+    if (value > 30) return '#66CCFF'; // Light blue
+    if (value > 20) return '#FFCC00'; // Yellow
+    return '#FF3300'; // Red
+}
+
+function getMoistureStatus(value) {
+    if (value > 60) return 'Saturated';
+    if (value > 40) return 'Adequate';
+    if (value > 20) return 'Low';
+    return 'Very Low';
+}
+
+function showRegionDetails(regionId) {
+    const region = regionsData.find(r => r.id === regionId);
+    if (!region) return;
+    
+    const detailsCard = document.getElementById('regionDetails');
+    const content = document.getElementById('regionDetailsContent');
+    
+    content.innerHTML = `
+        <h6 class="mb-3">${region.name}</h6>
+        <div class="mb-2">
+            <strong>Risk Level:</strong>
+            <span class="risk-badge risk-${region.risk_level} ms-2">
+                ${region.risk_level.replace('_', ' ').toUpperCase()}
+            </span>
+        </div>
+        <div class="mb-2">
+            <strong>Risk Score:</strong> ${region.risk_score.toFixed(1)}/100
+        </div>
+        <div class="mb-2">
+            <strong>Coordinates:</strong> ${region.latitude.toFixed(4)}, ${region.longitude.toFixed(4)}
+        </div>
+        <div class="mb-3">
+            <strong>Last Assessment:</strong> ${region.assessment_date ? formatDate(region.assessment_date) : 'No data'}
+        </div>
+        <div class="d-grid gap-2">
+            <a href="/dashboard/analytics/?region=${regionId}" class="btn btn-primary btn-sm">
+                <i class="fas fa-chart-line"></i> View Analytics
+            </a>
+            <a href="/drought-data/api/risk-assessments/?region=${regionId}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-download"></i> Export Data
+            </a>
+        </div>
+    `;
+    
+    detailsCard.style.display = 'block';
+}
+
+function toggleFarmers() {
+    const showFarmers = document.getElementById('showFarmers').checked;
+    
+    if (showFarmers) {
+        map.addLayer(farmerLayer);
+        // Load farmer data (placeholder)
+        loadFarmerMarkers();
+    } else {
+        map.removeLayer(farmerLayer);
+    }
+}
+
+function toggleWeatherStations() {
+    const showWeather = document.getElementById('showWeather').checked;
+    
+    if (showWeather) {
+        map.addLayer(weatherLayer);
+        // Load weather station data (placeholder)
+        loadWeatherMarkers();
+    } else {
+        map.removeLayer(weatherLayer);
+    }
+}
+
+function loadFarmerMarkers() {
+    // Placeholder farmer markers
+    const farmerIcon = L.divIcon({
+        html: '<i class="fas fa-user" style="color: #28a745;"></i>',
+        iconSize: [20, 20],
+        className: 'custom-div-icon'
+    });
+    
+    // Add some sample farmer markers
+    regionsData.forEach(region => {
+        if (region.latitude && region.longitude) {
+            // Add 1-3 farmers per region randomly
+            const farmerCount = Math.floor(Math.random() * 3) + 1;
+            for (let i = 0; i < farmerCount; i++) {
+                const lat = region.latitude + (Math.random() - 0.5) * 0.1;
+                const lng = region.longitude + (Math.random() - 0.5) * 0.1;
+                
+                const marker = L.marker([lat, lng], { icon: farmerIcon });
+                marker.bindPopup(`
+                    <div class="popup-title">Farmer ${i + 1}</div>
+                    <div class="popup-metric"><strong>Region:</strong> ${region.name}</div>
+                    <div class="popup-metric"><strong>Crop:</strong> Maize, Beans</div>
+                    <div class="popup-metric"><strong>Farm Size:</strong> 2.5 acres</div>
+                `);
+                
+                farmerLayer.addLayer(marker);
+            }
+        }
+    });
+}
+
+function loadWeatherMarkers() {
+    // Placeholder weather station markers
+    const weatherIcon = L.divIcon({
+        html: '<i class="fas fa-cloud-sun" style="color: #17a2b8;"></i>',
+        iconSize: [20, 20],
+        className: 'custom-div-icon'
+    });
+    
+    // Add weather stations for major regions
+    const majorRegions = regionsData.slice(0, 4); // First 4 regions
+    majorRegions.forEach(region => {
+        if (region.latitude && region.longitude) {
+            const marker = L.marker([region.latitude, region.longitude], { icon: weatherIcon });
+            marker.bindPopup(`
+                <div class="popup-title">Weather Station</div>
+                <div class="popup-metric"><strong>Location:</strong> ${region.name}</div>
+                <div class="popup-metric"><strong>Temperature:</strong> ${(Math.random() * 15 + 20).toFixed(1)}°C</div>
+                <div class="popup-metric"><strong>Humidity:</strong> ${(Math.random() * 40 + 40).toFixed(0)}%</div>
+                <div class="popup-metric"><strong>Rainfall:</strong> ${(Math.random() * 20).toFixed(1)}mm</div>
+            `);
+            
+            weatherLayer.addLayer(marker);
+        }
+    });
+}
+
+function updateMapData() {
+    const days = document.getElementById('dateRange').value;
+    // Reload current layer with new date range
+    if (currentMapLayer === 'risk') {
+        showRiskLayer();
+    } else if (currentMapLayer === 'ndvi') {
+        showNDVILayer();
+    } else if (currentMapLayer === 'moisture') {
+        showMoistureLayer();
+    }
+}
+
+function refreshMap() {
+    // Reload all data
+    location.reload();
+}
+
+function loadMapSummaryTable() {
+    const tbody = document.getElementById('mapSummaryTable').querySelector('tbody');
+    
+    let html = '';
+    regionsData.forEach(region => {
+        html += `
+            <tr>
+                <td><strong>${region.name}</strong></td>
+                <td>
+                    <span class="risk-badge risk-${region.risk_level}">
+                        ${region.risk_level.replace('_', ' ').toUpperCase()}
+                    </span>
+                </td>
+                <td>${region.risk_score.toFixed(1)}</td>
+                <td><span class="text-muted">Loading...</span></td>
+                <td><span class="text-muted">Loading...</span></td>
+                <td>${region.assessment_date ? formatDate(region.assessment_date) : 'No data'}</td>
+                <td>
+                    <i class="fas fa-arrow-up text-danger" title="Risk increasing"></i>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="showRegionDetails(${region.id})">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+</script>
+{% endblock %}

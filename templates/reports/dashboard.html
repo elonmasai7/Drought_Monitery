@@ -1,0 +1,341 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Reports Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.report-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+}
+.report-card-header {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+.report-card-body {
+    padding: 1rem;
+}
+.export-btn {
+    margin: 0.25rem;
+}
+.date-input {
+    margin-bottom: 1rem;
+}
+.preview-data {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    margin-top: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4">
+                <i class="fas fa-file-export"></i> Reports Dashboard
+            </h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="report-card">
+                <div class="report-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line"></i> Summary Reports
+                    </h5>
+                </div>
+                <div class="report-card-body">
+                    <p class="text-muted">Generate summary reports with key metrics and regional overviews.</p>
+                    
+                    <form id="summaryReportForm">
+                        <div class="date-input">
+                            <label for="summary_start_date">Start Date:</label>
+                            <input type="date" id="summary_start_date" name="start_date" class="form-control" value="{{ default_start_date }}">
+                        </div>
+                        <div class="date-input">
+                            <label for="summary_end_date">End Date:</label>
+                            <input type="date" id="summary_end_date" name="end_date" class="form-control" value="{{ current_date }}">
+                        </div>
+                        
+                        <div class="btn-group-vertical w-100">
+                            <button type="button" class="btn btn-success export-btn" onclick="exportReport('summary', 'csv')">
+                                <i class="fas fa-file-csv"></i> Export CSV
+                            </button>
+                            <button type="button" class="btn btn-primary export-btn" onclick="exportReport('summary', 'excel')">
+                                <i class="fas fa-file-excel"></i> Export Excel
+                            </button>
+                            <button type="button" class="btn btn-danger export-btn" onclick="exportReport('summary', 'pdf')">
+                                <i class="fas fa-file-pdf"></i> Export PDF
+                            </button>
+                            <button type="button" class="btn btn-info export-btn" onclick="previewData('summary')">
+                                <i class="fas fa-eye"></i> Preview Data
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="report-card">
+                <div class="report-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt"></i> Detailed Reports
+                    </h5>
+                </div>
+                <div class="report-card-body">
+                    <p class="text-muted">Generate comprehensive reports with all available data.</p>
+                    
+                    <form id="detailedReportForm">
+                        <div class="date-input">
+                            <label for="detailed_start_date">Start Date:</label>
+                            <input type="date" id="detailed_start_date" name="start_date" class="form-control" value="{{ default_start_date }}">
+                        </div>
+                        <div class="date-input">
+                            <label for="detailed_end_date">End Date:</label>
+                            <input type="date" id="detailed_end_date" name="end_date" class="form-control" value="{{ current_date }}">
+                        </div>
+                        
+                        <div class="btn-group-vertical w-100">
+                            <button type="button" class="btn btn-success export-btn" onclick="exportReport('full', 'excel')">
+                                <i class="fas fa-file-excel"></i> Export Full Excel
+                            </button>
+                            <button type="button" class="btn btn-danger export-btn" onclick="exportReport('detailed', 'pdf')">
+                                <i class="fas fa-file-pdf"></i> Export Detailed PDF
+                            </button>
+                            <button type="button" class="btn btn-info export-btn" onclick="previewData('detailed')">
+                                <i class="fas fa-eye"></i> Preview Data
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="report-card">
+                <div class="report-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i> Alerts Report
+                    </h5>
+                </div>
+                <div class="report-card-body">
+                    <p class="text-muted">Export alert data and delivery statistics.</p>
+                    
+                    <form id="alertsReportForm">
+                        <div class="date-input">
+                            <label for="alerts_start_date">Start Date:</label>
+                            <input type="date" id="alerts_start_date" name="start_date" class="form-control" value="{{ default_start_date }}">
+                        </div>
+                        <div class="date-input">
+                            <label for="alerts_end_date">End Date:</label>
+                            <input type="date" id="alerts_end_date" name="end_date" class="form-control" value="{{ current_date }}">
+                        </div>
+                        
+                        <button type="button" class="btn btn-success btn-sm export-btn" onclick="exportReport('alerts', 'csv')">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="report-card">
+                <div class="report-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar"></i> Assessments Report
+                    </h5>
+                </div>
+                <div class="report-card-body">
+                    <p class="text-muted">Export drought risk assessment data.</p>
+                    
+                    <form id="assessmentsReportForm">
+                        <div class="date-input">
+                            <label for="assessments_start_date">Start Date:</label>
+                            <input type="date" id="assessments_start_date" name="start_date" class="form-control" value="{{ default_start_date }}">
+                        </div>
+                        <div class="date-input">
+                            <label for="assessments_end_date">End Date:</label>
+                            <input type="date" id="assessments_end_date" name="end_date" class="form-control" value="{{ current_date }}">
+                        </div>
+                        
+                        <button type="button" class="btn btn-success btn-sm export-btn" onclick="exportReport('assessments', 'csv')">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="report-card">
+                <div class="report-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cloud-sun"></i> Weather Report
+                    </h5>
+                </div>
+                <div class="report-card-body">
+                    <p class="text-muted">Export weather data records.</p>
+                    
+                    <form id="weatherReportForm">
+                        <div class="date-input">
+                            <label for="weather_start_date">Start Date:</label>
+                            <input type="date" id="weather_start_date" name="start_date" class="form-control" value="{{ default_start_date }}">
+                        </div>
+                        <div class="date-input">
+                            <label for="weather_end_date">End Date:</label>
+                            <input type="date" id="weather_end_date" name="end_date" class="form-control" value="{{ current_date }}">
+                        </div>
+                        
+                        <button type="button" class="btn btn-success btn-sm export-btn" onclick="exportReport('weather', 'csv')">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="modal fade" id="previewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Report Data Preview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="previewContent">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportReport(reportType, format) {
+    // Get form data based on report type
+    let startDate, endDate;
+    
+    if (reportType === 'summary') {
+        startDate = document.getElementById('summary_start_date').value;
+        endDate = document.getElementById('summary_end_date').value;
+    } else if (reportType === 'full' || reportType === 'detailed') {
+        startDate = document.getElementById('detailed_start_date').value;
+        endDate = document.getElementById('detailed_end_date').value;
+    } else if (reportType === 'alerts') {
+        startDate = document.getElementById('alerts_start_date').value;
+        endDate = document.getElementById('alerts_end_date').value;
+    } else if (reportType === 'assessments') {
+        startDate = document.getElementById('assessments_start_date').value;
+        endDate = document.getElementById('assessments_end_date').value;
+    } else if (reportType === 'weather') {
+        startDate = document.getElementById('weather_start_date').value;
+        endDate = document.getElementById('weather_end_date').value;
+    }
+    
+    // Create form and submit
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/reports/export/${format}/`;
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken.value;
+        form.appendChild(csrfInput);
+    }
+    
+    const reportTypeInput = document.createElement('input');
+    reportTypeInput.type = 'hidden';
+    reportTypeInput.name = 'report_type';
+    reportTypeInput.value = reportType;
+    form.appendChild(reportTypeInput);
+    
+    if (startDate) {
+        const startDateInput = document.createElement('input');
+        startDateInput.type = 'hidden';
+        startDateInput.name = 'start_date';
+        startDateInput.value = startDate;
+        form.appendChild(startDateInput);
+    }
+    
+    if (endDate) {
+        const endDateInput = document.createElement('input');
+        endDateInput.type = 'hidden';
+        endDateInput.name = 'end_date';
+        endDateInput.value = endDate;
+        form.appendChild(endDateInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
+
+function previewData(reportType) {
+    let startDate, endDate;
+    
+    if (reportType === 'summary') {
+        startDate = document.getElementById('summary_start_date').value;
+        endDate = document.getElementById('summary_end_date').value;
+    } else {
+        startDate = document.getElementById('detailed_start_date').value;
+        endDate = document.getElementById('detailed_end_date').value;
+    }
+    
+    const url = new URL('/reports/preview/', window.location.origin);
+    url.searchParams.append('report_type', reportType);
+    if (startDate) url.searchParams.append('start_date', startDate);
+    if (endDate) url.searchParams.append('end_date', endDate);
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const content = `
+                    <h6>Report Period: ${data.data.period}</h6>
+                    <table class="table table-sm">
+                        <tr><td>Regions Monitored:</td><td><strong>${data.data.regions_count}</strong></td></tr>
+                        <tr><td>Risk Assessments:</td><td><strong>${data.data.assessments_count}</strong></td></tr>
+                        <tr><td>Alerts Sent:</td><td><strong>${data.data.alerts_count}</strong></td></tr>
+                        <tr><td>Weather Records:</td><td><strong>${data.data.weather_records_count}</strong></td></tr>
+                        <tr><td>New Farmers:</td><td><strong>${data.data.new_farmers_count}</strong></td></tr>
+                    </table>
+                `;
+                document.getElementById('previewContent').innerHTML = content;
+            } else {
+                document.getElementById('previewContent').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('previewContent').innerHTML = `<div class="alert alert-danger">Error loading preview: ${error}</div>`;
+        });
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    modal.show();
+}
+</script>
+{% endblock %}
