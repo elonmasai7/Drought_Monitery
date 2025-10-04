@@ -89,6 +89,250 @@ python manage.py runserver
 
 Visit `http://localhost:8000` to access the application.
 
+## 💻 VS Code Development Setup
+
+For the best development experience in VS Code:
+
+### 1. **Recommended Extensions**
+Install these extensions from the VS Code marketplace:
+
+```json
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.django",
+    "ms-python.pylint",
+    "ms-toolsai.jupyter",
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "eamodio.gitlens",
+    "ms-vscode-remote.remote-containers",
+    "humao.rest-client",
+    "formulahendry.auto-rename-tag",
+    "ms-python.black-formatter"
+  ]
+}
+```
+
+### 2. **VS Code Settings**
+Create `.vscode/settings.json`:
+
+```json
+{
+  "python.defaultInterpreterPath": "./venv/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true,
+  "python.formatting.provider": "black",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "files.associations": {
+    "*.html": "django-html"
+  },
+  "emmet.includeLanguages": {
+    "django-html": "html"
+  }
+}
+```
+
+### 3. **Launch Configuration**
+Create `.vscode/launch.json` for debugging:
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Django",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/manage.py",
+      "args": ["runserver"],
+      "django": true,
+      "justMyCode": true
+    },
+    {
+      "name": "Django Tests",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/manage.py",
+      "args": ["test"],
+      "django": true,
+      "justMyCode": true
+    }
+  ]
+}
+```
+
+### 4. **Terminal Commands for VS Code**
+
+Open the integrated terminal (`Ctrl+` ` or `Cmd+` `) and run:
+
+#### **Initial Setup**
+```bash
+# Clone repository
+git clone https://github.com/elonmasai7/Drought_Monitery.git
+cd Drought_Monitery
+
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+#### **Environment Configuration**
+```bash
+# Copy environment template
+cp .env.production.example .env
+
+# Edit environment variables (use VS Code)
+code .env
+```
+
+#### **Database Setup**
+```bash
+# Create and apply migrations
+python manage.py makemigrations
+python manage.py migrate
+
+# Load sample data
+python manage.py load_sample_data
+
+# Create superuser
+python manage.py createsuperuser
+```
+
+#### **Running the Application**
+```bash
+# Terminal 1: Django development server
+python manage.py runserver
+
+# Terminal 2: Start Redis (required for background tasks)
+# Windows: Download Redis from https://redis.io/docs/getting-started/installation/install-redis-on-windows/
+# macOS: brew install redis && redis-server
+# Linux: sudo systemctl start redis
+
+# Terminal 3: Celery worker (background tasks)
+celery -A drought_warning_system worker -l info
+
+# Terminal 4: Celery beat (task scheduler)
+celery -A drought_warning_system beat -l info
+```
+
+### 5. **Testing Commands**
+
+```bash
+# Run all tests
+python manage.py test
+
+# Run specific app tests
+python manage.py test core
+python manage.py test alerts
+python manage.py test drought_data
+
+# Test USSD functionality
+python manage.py test_ussd
+
+# Test WhatsApp integration
+python manage.py test_whatsapp
+
+# Manual drought risk calculation
+python manage.py calculate_drought_risk
+
+# Create demo users
+python manage.py create_demo_users
+```
+
+### 6. **API Testing with REST Client**
+
+Create `api_tests.http` file for API testing:
+
+```http
+### Login to get token
+POST http://127.0.0.1:8000/api/auth/login/
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "your_password"
+}
+
+### Get regions (replace YOUR_TOKEN)
+GET http://127.0.0.1:8000/api/regions/
+Authorization: Token YOUR_TOKEN
+
+### Get drought data
+GET http://127.0.0.1:8000/api/drought-data/
+Authorization: Token YOUR_TOKEN
+
+### Get alerts
+GET http://127.0.0.1:8000/api/alerts/
+Authorization: Token YOUR_TOKEN
+
+### Health check
+GET http://127.0.0.1:8000/health/detailed/
+```
+
+### 7. **Key URLs for Development**
+
+- **Main Dashboard**: http://127.0.0.1:8000/
+- **Admin Panel**: http://127.0.0.1:8000/admin/
+- **API Root**: http://127.0.0.1:8000/api/
+- **Reports Dashboard**: http://127.0.0.1:8000/reports/
+- **Health Check**: http://127.0.0.1:8000/health/
+- **USSD Endpoint**: http://127.0.0.1:8000/ussd/
+
+### 8. **Development Workflow**
+
+1. **Start all services**: Django server, Redis, Celery worker, Celery beat
+2. **Access admin panel**: Create test data and configure settings
+3. **Test API endpoints**: Use REST Client or Postman
+4. **Monitor logs**: Check terminal outputs for errors
+5. **Debug**: Use VS Code debugger with launch configurations
+
+### 9. **Troubleshooting Common Issues**
+
+```bash
+# Port already in use
+python manage.py runserver 8001
+
+# Redis connection error
+# Check if Redis is running: redis-cli ping
+
+# Database connection issues
+python manage.py migrate --run-syncdb
+
+# Missing environment variables
+# Check .env file and compare with .env.production.example
+
+# Module import errors
+pip install -r requirements.txt --upgrade
+
+# Static files not loading
+python manage.py collectstatic
+```
+
+### 10. **Production Testing**
+
+```bash
+# Test with production settings
+export DJANGO_SETTINGS_MODULE=drought_warning_system.settings
+DEBUG=False python manage.py runserver
+
+# Run production checks
+python manage.py check --deploy
+
+# Test Docker build locally
+docker-compose up --build
+```
+
 ## 🐳 Docker Deployment
 
 For production deployment using Docker:

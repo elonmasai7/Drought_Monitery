@@ -1,0 +1,65 @@
+### Login to get token
+POST http://127.0.0.1:8000/api/auth/login/
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "your_password"
+}
+
+### Get token (alternative endpoint)
+POST http://127.0.0.1:8000/api/auth/token/
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "your_password"
+}
+
+### Get regions (replace YOUR_TOKEN)
+GET http://127.0.0.1:8000/api/regions/
+Authorization: Token YOUR_TOKEN
+
+### Get weather data
+GET http://127.0.0.1:8000/api/weather/
+Authorization: Token YOUR_TOKEN
+
+### Get drought data
+GET http://127.0.0.1:8000/api/drought-data/
+Authorization: Token YOUR_TOKEN
+
+### Get risk assessments
+GET http://127.0.0.1:8000/api/risk-assessments/
+Authorization: Token YOUR_TOKEN
+
+### Get alerts
+GET http://127.0.0.1:8000/api/alerts/
+Authorization: Token YOUR_TOKEN
+
+### Get farmer profiles
+GET http://127.0.0.1:8000/api/farmer-profiles/
+Authorization: Token YOUR_TOKEN
+
+### Health check (simple)
+GET http://127.0.0.1:8000/health/
+
+### Health check (detailed)
+GET http://127.0.0.1:8000/health/detailed/
+
+### USSD webhook test
+POST http://127.0.0.1:8000/ussd/
+Content-Type: application/x-www-form-urlencoded
+
+sessionId=session123&serviceCode=*123#&phoneNumber=%2B254712345678&text=
+
+### Create alert (POST)
+POST http://127.0.0.1:8000/api/alerts/
+Content-Type: application/json
+Authorization: Token YOUR_TOKEN
+
+{
+  "message": "Test drought alert",
+  "alert_type": "drought",
+  "severity": "medium",
+  "region": 1
+}
