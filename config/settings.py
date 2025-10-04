@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-14hjaeni-ees46diqj-_pddo_3=&if*vd4ca2648&%%6)ak5b=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]  # Allow all hosts for development and Clacky PaaS deployment
 
 
 # Application definition
