@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Farmer Dashboard - Drought Warning System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .farmer-header {
+        background: linear-gradient(135deg, #2d5a2d, #4a7c59);
+        color: white;
+        padding: 30px 0;
+        margin-bottom: 30px;
+    }
+    
+    .welcome-card {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 20px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .alert-card {
+        border-left: 4px solid #dc3545;
+        margin-bottom: 15px;
+    }
+    
+    .alert-card.info {
+        border-left-color: #17a2b8;
+    }
+    
+    .alert-card.warning {
+        border-left-color: #ffc107;
+    }
+    
+    .alert-card.success {
+        border-left-color: #28a745;
+    }
+    
+    .recommendation-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .risk-level-low {
+        color: #28a745;
+    }
+    
+    .risk-level-medium {
+        color: #ffc107;
+    }
+    
+    .risk-level-high, .risk-level-very_high, .risk-level-extreme {
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Farmer Header -->
+<div class="farmer-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="welcome-card">
+                    <h1><i class="fas fa-seedling me-3"></i>Welcome, {{ user.get_full_name|default:user.username }}!</h1>
+                    <p class="mb-0">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        {% if dashboard_data.region %}
+                            {{ dashboard_data.region.name }}
+                        {% else %}
+                            Location not set
+                        {% endif %}
+                    </p>
+                    {% if dashboard_data.farm_data.farm_size %}
+                        <p class="mb-0">
+                            <i class="fas fa-chart-area me-2"></i>
+                            Farm size: {{ dashboard_data.farm_data.farm_size }} acres
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="text-white-50">
+                    <i class="fas fa-calendar me-2"></i>
+                    {{ "now"|date:"l, F d, Y" }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Regional Risk Assessment -->
+    {% if dashboard_data.regional_data.risk_assessment %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="stat-card">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h4>
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Drought Risk Level
+                        </h4>
+                        <h2 class="risk-level-{{ dashboard_data.regional_data.risk_assessment.risk_level }}">
+                            {{ dashboard_data.regional_data.risk_assessment.get_risk_level_display|title }}
+                        </h2>
+                        <p class="text-muted mb-0">
+                            Risk Score: {{ dashboard_data.regional_data.risk_assessment.risk_score|floatformat:1 }}/100
+                            | Last Updated: {{ dashboard_data.regional_data.risk_assessment.assessment_date|date:"M d, Y" }}
+                        </p>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-thermometer-half fa-4x text-muted"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Weather & Environmental Data -->
+    <div class="row mb-4">
+        {% if dashboard_data.regional_data.weather %}
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <i class="fas fa-thermometer-half fa-3x text-warning mb-3"></i>
+                <h5>Temperature</h5>
+                <h3>{{ dashboard_data.regional_data.weather.avg_temperature|floatformat:1|default:"--" }}°C</h3>
+                <small class="text-muted">Average</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <i class="fas fa-cloud-rain fa-3x text-primary mb-3"></i>
+                <h5>Rainfall</h5>
+                <h3>{{ dashboard_data.regional_data.weather.total_rainfall|floatformat:1|default:"--" }} mm</h3>
+                <small class="text-muted">Monthly</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <i class="fas fa-tint fa-3x text-info mb-3"></i>
+                <h5>Humidity</h5>
+                <h3>{{ dashboard_data.regional_data.weather.avg_humidity|floatformat:1|default:"--" }}%</h3>
+                <small class="text-muted">Average</small>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if dashboard_data.regional_data.soil_moisture.avg_moisture %}
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <i class="fas fa-seedling fa-3x text-success mb-3"></i>
+                <h5>Soil Moisture</h5>
+                <h3>{{ dashboard_data.regional_data.soil_moisture.avg_moisture|floatformat:1 }}%</h3>
+                <small class="text-muted">Current</small>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <!-- Recommendations -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-lightbulb me-2"></i>Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    {% if dashboard_data.recommendations %}
+                        {% for rec in dashboard_data.recommendations %}
+                        <div class="recommendation-card">
+                            <div class="d-flex align-items-start">
+                                <i class="{{ rec.icon }} fa-2x me-3"></i>
+                                <div>
+                                    <h6 class="mb-1">{{ rec.title }}</h6>
+                                    <p class="mb-0 text-muted">{{ rec.message }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No specific recommendations at this time. Continue monitoring your crops and weather conditions.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Alerts -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bell me-2"></i>Recent Alerts</h5>
+                </div>
+                <div class="card-body">
+                    {% if dashboard_data.alerts %}
+                        {% for alert_data in dashboard_data.alerts %}
+                        <div class="alert-card alert-card {{ alert_data.alert.severity_level }}">
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ alert_data.alert.title }}</h6>
+                                        <p class="mb-1 small">{{ alert_data.alert.message|truncatewords:20 }}</p>
+                                        <small class="text-muted">
+                                            {{ alert_data.alert.created_at|timesince }} ago
+                                            {% if alert_data.alert.region %}
+                                                | {{ alert_data.alert.region.name }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    {% if alert_data.delivered %}
+                                        <span class="badge bg-success">Delivered</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No recent alerts. You'll be notified of any important updates.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Farm Information -->
+    {% if dashboard_data.farm_data %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tractor me-2"></i>Farm Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Farm Size:</strong> {{ dashboard_data.farm_data.farm_size|default:"Not specified" }} acres</p>
+                            <p><strong>Primary Crops:</strong> 
+                                {% if dashboard_data.farm_data.primary_crops %}
+                                    {% for crop in dashboard_data.farm_data.primary_crops %}
+                                        <span class="badge bg-secondary me-1">{{ crop|title }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            {% if dashboard_data.farm_data.location.latitude and dashboard_data.farm_data.location.longitude %}
+                                <p><strong>Location:</strong> 
+                                    {{ dashboard_data.farm_data.location.latitude|floatformat:4 }}, 
+                                    {{ dashboard_data.farm_data.location.longitude|floatformat:4 }}
+                                </p>
+                            {% endif %}
+                            <p><strong>Region:</strong> {{ dashboard_data.region.name|default:"Not set" }}</p>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'dashboard:profile' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-edit me-2"></i>Update Farm Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-refresh dashboard every 5 minutes
+    setTimeout(function() {
+        location.reload();
+    }, 300000);
+</script>
+{% endblock %}

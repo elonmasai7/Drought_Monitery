@@ -11,6 +11,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.db import models
 from django.db.models import Q
+from django.contrib.auth.models import User
+from django.core.paginator import Paginator
+from django.utils import timezone
+from datetime import timedelta
 import json
 
 from .models import UserProfile, Region
@@ -308,8 +312,7 @@ def admin_get_users(request):
     if not has_role(request.user, ['admin', 'superuser']):
         return JsonResponse({'error': 'Admin access required'}, status=403)
     
-    from django.contrib.auth.models import User
-    from django.core.paginator import Paginator
+    # Imports moved to top of file
     
     # Get query parameters
     page = int(request.GET.get('page', 1))
@@ -379,9 +382,7 @@ def admin_get_system_stats(request):
     if not has_role(request.user, ['admin', 'superuser']):
         return JsonResponse({'error': 'Admin access required'}, status=403)
     
-    from django.contrib.auth.models import User
-    from django.utils import timezone
-    from datetime import timedelta
+    # Imports moved to top of file
     
     today = timezone.now().date()
     week_ago = today - timedelta(days=7)

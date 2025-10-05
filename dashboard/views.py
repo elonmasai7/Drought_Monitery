@@ -24,7 +24,7 @@ from alerts.models import Alert, AlertDelivery
 @login_required
 def react_dashboard(request):
     """
-    React-based enhanced dashboard view with role-specific features
+    Enhanced dashboard view with role-specific features
     """
     from .farmer_utils import get_farmer_dashboard_data
     
@@ -45,7 +45,12 @@ def react_dashboard(request):
         'dashboard_data': dashboard_data,
     }
     
-    return render(request, 'dashboard/react_dashboard.html', context)
+    # Use appropriate template based on user role
+    if user_role == 'farmer':
+        return render(request, 'dashboard/farmer_dashboard.html', context)
+    else:
+        # For admin/extension officers, redirect to admin dashboard
+        return redirect('dashboard:admin_dashboard')
 
 
 @login_required
@@ -576,7 +581,7 @@ def create_alert(request):
     """
     if request.method == 'POST':
         try:
-            from alerts.models import Alert, AlertDelivery
+            # Alert, AlertDelivery already imported at top
             from alerts.tasks import send_alert
             
             # Get form data
@@ -724,8 +729,6 @@ def admin_dashboard(request):
     Enhanced admin dashboard with comprehensive system overview
     """
     from .admin_utils import get_system_overview, get_data_quality_report
-    from django.contrib.auth.models import User
-    from alerts.models import Alert
     
     overview = get_system_overview()
     data_quality = get_data_quality_report()
@@ -846,7 +849,7 @@ def admin_bulk_alert(request):
     """
     if request.method == 'POST':
         try:
-            from alerts.models import Alert
+            # Alert already imported at top
             from alerts.tasks import send_alert
             
             # Get form data
