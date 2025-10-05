@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard - Drought Warning System{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css" rel="stylesheet">
+<style>
+    .info-box-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .admin-card {
+        margin-bottom: 20px;
+    }
+    .metric-card {
+        border-left: 4px solid #17a2b8;
+    }
+    .alert-card {
+        border-left: 4px solid #28a745;
+    }
+    .data-card {
+        border-left: 4px solid #ffc107;
+    }
+    .ussd-card {
+        border-left: 4px solid #6f42c1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">Admin Dashboard</h1>
+                <div>
+                    <a href="{% url 'dashboard:admin_export' %}?type=users&format=csv" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-download"></i> Export Data
+                    </a>
+                    <a href="{% url 'dashboard:admin_data' %}" class="btn btn-info btn-sm">
+                        <i class="fas fa-database"></i> System Health
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Overview Cards -->
+    <div class="row">
+        <!-- Users Overview -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card admin-card metric-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-users fa-2x text-info"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="card-title">{{ overview.users.total }}</h5>
+                            <p class="card-text text-muted">Total Users</p>
+                            <small class="text-success">
+                                {{ overview.users.active_last_30_days }} active (30d)
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Overview -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card admin-card alert-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle fa-2x text-success"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="card-title">{{ overview.alerts.total }}</h5>
+                            <p class="card-text text-muted">Total Alerts</p>
+                            <small class="text-info">
+                                {{ overview.alerts.sent_today }} sent today
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Overview -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card admin-card data-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-database fa-2x text-warning"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="card-title">{{ overview.data.weather_records }}</h5>
+                            <p class="card-text text-muted">Weather Records</p>
+                            <small class="text-info">
+                                {{ overview.data.latest_weather }} this week
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- USSD Overview -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card admin-card ussd-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-mobile-alt fa-2x text-purple"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="card-title">{{ overview.ussd.total_sessions }}</h5>
+                            <p class="card-text text-muted">USSD Sessions</p>
+                            <small class="text-success">
+                                {{ overview.ussd.active_sessions }} active
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Metrics -->
+    <div class="row">
+        <!-- User Breakdown -->
+        <div class="col-lg-6">
+            <div class="card admin-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">User Distribution</h5>
+                    <a href="{% url 'dashboard:admin_farmers' %}" class="btn btn-sm btn-outline-primary">
+                        Manage Users
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-center p-3">
+                                <h4 class="text-primary">{{ overview.users.farmers }}</h4>
+                                <p class="text-muted mb-0">Farmers</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-3">
+                                <h4 class="text-info">{{ overview.users.extension_officers }}</h4>
+                                <p class="text-muted mb-0">Extension Officers</p>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="text-center">
+                        <h5 class="text-success">{{ overview.users.admins }}</h5>
+                        <p class="text-muted mb-0">System Administrators</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Status -->
+        <div class="col-lg-6">
+            <div class="card admin-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Alert Status</h5>
+                    <a href="{% url 'dashboard:admin_alerts' %}" class="btn btn-sm btn-outline-success">
+                        Manage Alerts
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4">
+                            <div class="text-center p-2">
+                                <h5 class="text-warning">{{ overview.alerts.pending }}</h5>
+                                <small class="text-muted">Pending</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center p-2">
+                                <h5 class="text-success">{{ overview.alerts.sent_this_week }}</h5>
+                                <small class="text-muted">Sent (7d)</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center p-2">
+                                <h5 class="text-danger">{{ overview.alerts.failed }}</h5>
+                                <small class="text-muted">Failed</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Quality Dashboard -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card admin-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Data Quality & System Health</h5>
+                    <a href="{% url 'dashboard:admin_data' %}" class="btn btn-sm btn-outline-info">
+                        View Details
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6">
+                            <div class="text-center p-3">
+                                <div class="mb-2">
+                                    {% if data_quality.weather_data.is_fresh %}
+                                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                                    {% else %}
+                                        <i class="fas fa-exclamation-circle fa-2x text-warning"></i>
+                                    {% endif %}
+                                </div>
+                                <h6>Weather Data</h6>
+                                <small class="text-muted">
+                                    Latest: {{ data_quality.weather_data.latest_date|default:"No data" }}
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-md-6">
+                            <div class="text-center p-3">
+                                <div class="mb-2">
+                                    {% if data_quality.ndvi_data.is_fresh %}
+                                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                                    {% else %}
+                                        <i class="fas fa-exclamation-circle fa-2x text-warning"></i>
+                                    {% endif %}
+                                </div>
+                                <h6>NDVI Data</h6>
+                                <small class="text-muted">
+                                    Latest: {{ data_quality.ndvi_data.latest_date|default:"No data" }}
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-md-6">
+                            <div class="text-center p-3">
+                                <div class="mb-2">
+                                    <i class="fas fa-chart-line fa-2x text-info"></i>
+                                </div>
+                                <h6>Assessment Coverage</h6>
+                                <h5 class="text-primary">{{ data_quality.assessment_coverage }}%</h5>
+                                <small class="text-muted">{{ data_quality.regions_assessed_recently }}/{{ data_quality.total_regions }} regions</small>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-md-6">
+                            <div class="text-center p-3">
+                                <div class="mb-2">
+                                    <i class="fas fa-paper-plane fa-2x text-success"></i>
+                                </div>
+                                <h6>Delivery Success</h6>
+                                <h5 class="text-success">{{ data_quality.delivery_success_rate }}%</h5>
+                                <small class="text-muted">Last 7 days</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card admin-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <a href="{% url 'dashboard:admin_alerts' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-bell"></i><br>
+                                <small>Manage Alerts</small>
+                            </a>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <a href="{% url 'dashboard:admin_farmers' %}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-users"></i><br>
+                                <small>Manage Farmers</small>
+                            </a>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <a href="{% url 'dashboard:admin_ussd' %}" class="btn btn-outline-purple w-100">
+                                <i class="fas fa-mobile-alt"></i><br>
+                                <small>USSD Analytics</small>
+                            </a>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <a href="{% url 'dashboard:test_alert_services' %}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-vial"></i><br>
+                                <small>Test Services</small>
+                            </a>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <a href="{% url 'dashboard:admin_export' %}?type=users" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-download"></i><br>
+                                <small>Export Data</small>
+                            </a>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                            <a href="/admin/" class="btn btn-outline-secondary w-100" target="_blank">
+                                <i class="fas fa-cog"></i><br>
+                                <small>Django Admin</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+{% endblock %}

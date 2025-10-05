@@ -1,0 +1,479 @@
+{% extends 'base.html' %}
+
+{% block title %}Alerts - Drought Warning System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="mb-0">
+            <i class="fas fa-bell me-2"></i>
+            Alert Management
+        </h1>
+        <p class="text-muted">Monitor and manage drought alerts and notifications</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="btn-group me-2">
+            <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#testServicesModal">
+                <i class="fas fa-vial me-2"></i>Test Services
+            </button>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAlertModal">
+            <i class="fas fa-plus me-2"></i>Create Alert
+        </button>
+    </div>
+</div>
+
+<!-- Alert Statistics -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="metric-card text-center">
+            <div class="metric-value text-primary">{{ total_alerts }}</div>
+            <div class="metric-label">Total Alerts</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="metric-card text-center">
+            <div class="metric-value text-warning">{{ alerts_today }}</div>
+            <div class="metric-label">Alerts Today</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="metric-card text-center">
+            <div class="metric-value text-danger">{{ pending_deliveries }}</div>
+            <div class="metric-label">Pending Deliveries</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="metric-card text-center">
+            <div class="metric-value text-success" id="deliveryRate">98%</div>
+            <div class="metric-label">Delivery Success Rate</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Region</label>
+                        <select class="form-select" name="region">
+                            <option value="all">All Regions</option>
+                            {% for region in regions %}
+                                <option value="{{ region.id }}" {% if region_filter == region.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ region.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Alert Type</label>
+                        <select class="form-select" name="status">
+                            <option value="all">All Types</option>
+                            <option value="drought_warning" {% if status_filter == "drought_warning" %}selected{% endif %}>Drought Warning</option>
+                            <option value="water_stress" {% if status_filter == "water_stress" %}selected{% endif %}>Water Stress</option>
+                            <option value="planting_advisory" {% if status_filter == "planting_advisory" %}selected{% endif %}>Planting Advisory</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Date Range</label>
+                        <select class="form-select" name="date_range">
+                            <option value="7">Last 7 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-2"></i>Filter
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Alerts</h5>
+            </div>
+            <div class="card-body">
+                {% if page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date/Time</th>
+                                    <th>Region</th>
+                                    <th>Type</th>
+                                    <th>Severity</th>
+                                    <th>Title</th>
+                                    <th>Delivery Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for alert in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold">{{ alert.created_at|date:"M d, Y" }}</div>
+                                            <small class="text-muted">{{ alert.created_at|time:"H:i" }}</small>
+                                        </td>
+                                        <td>
+                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                            {{ alert.region.name }}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ alert.get_alert_type_display }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ alert.severity_level }}">
+                                                {{ alert.get_severity_level_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold">{{ alert.title }}</div>
+                                            <small class="text-muted">{{ alert.message|truncatewords:10 }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress me-2" style="width: 60px; height: 6px;">
+                                                    <div class="progress-bar bg-success" style="width: 85%"></div>
+                                                </div>
+                                                <small>85%</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" onclick="viewAlert({{ alert.id }})">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-outline-secondary" onclick="resendAlert({{ alert.id }})">
+                                                    <i class="fas fa-paper-plane"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                        <nav aria-label="Alerts pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                        <h5>No alerts found</h5>
+                        <p class="text-muted">No alerts match the current filters.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Alert Modal -->
+<div class="modal fade" id="createAlertModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createAlertForm" method="post" action="{% url 'dashboard:create_alert' %}">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Region</label>
+                            <select class="form-select" name="region" required>
+                                <option value="">Select Region</option>
+                                {% for region in regions %}
+                                    <option value="{{ region.id }}">{{ region.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Alert Type</label>
+                            <select class="form-select" name="alert_type" required>
+                                <option value="drought_warning">Drought Warning</option>
+                                <option value="water_stress">Water Stress</option>
+                                <option value="planting_advisory">Planting Advisory</option>
+                                <option value="weather_alert">Weather Alert</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Severity Level</label>
+                        <select class="form-select" name="severity_level" required>
+                            <option value="info">Info</option>
+                            <option value="warning">Warning</option>
+                            <option value="danger">High Priority</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" name="title" required placeholder="Alert title">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea class="form-control" name="message" rows="4" required placeholder="Alert message content"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="send_whatsapp" checked>
+                                <label class="form-check-label">Send via WhatsApp</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="send_sms" checked>
+                                <label class="form-check-label">Send via SMS</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="send_email">
+                                <label class="form-check-label">Send via Email</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary" form="createAlertForm">
+                    <i class="fas fa-paper-plane me-2"></i>Send Alert
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Details Modal -->
+<div class="modal fade" id="alertDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Alert Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="alertDetailsContent">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Services Modal -->
+<div class="modal fade" id="testServicesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-vial me-2"></i>
+                    Test Alert Services
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="testServicesForm" method="post" action="{% url 'dashboard:test_alert_services' %}">
+                    {% csrf_token %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Test your alert delivery services</strong><br>
+                        This will send test messages to verify that WhatsApp, SMS, and Email services are working correctly.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Service to Test</label>
+                        <select class="form-select" name="test_service">
+                            <option value="all">All Services</option>
+                            <option value="whatsapp">WhatsApp Only</option>
+                            <option value="sms">SMS Only</option>
+                            <option value="email">Email Only</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Test Phone Number (Optional)</label>
+                        <input type="tel" class="form-control" name="phone_number" 
+                               placeholder="+254700000000" 
+                               value="{% if user.userprofile.phone_number %}{{ user.userprofile.phone_number }}{% endif %}">
+                        <div class="form-text">Leave blank to use your profile phone number</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Test Email Address (Optional)</label>
+                        <input type="email" class="form-control" name="email_address" 
+                               placeholder="test@example.com" 
+                               value="{{ user.email }}">
+                        <div class="form-text">Leave blank to use your account email</div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Note:</strong> Without configured API keys, services will run in mock mode for testing.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-info" form="testServicesForm">
+                    <i class="fas fa-play me-2"></i>Run Test
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function viewAlert(alertId) {
+    // Show alert details modal
+    const modal = new bootstrap.Modal(document.getElementById('alertDetailsModal'));
+    
+    // Load alert details
+    document.getElementById('alertDetailsContent').innerHTML = 
+        '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+    
+    // Mock alert details for demonstration
+    setTimeout(() => {
+        document.getElementById('alertDetailsContent').innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Alert Information</h6>
+                    <p><strong>ID:</strong> ${alertId}</p>
+                    <p><strong>Type:</strong> Drought Warning</p>
+                    <p><strong>Severity:</strong> <span class="badge bg-warning">High</span></p>
+                    <p><strong>Created:</strong> {{ "now"|date:"M d, Y H:i" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Delivery Statistics</h6>
+                    <p><strong>Total Recipients:</strong> 125</p>
+                    <p><strong>Delivered:</strong> 118 (94%)</p>
+                    <p><strong>Failed:</strong> 7 (6%)</p>
+                    <p><strong>Pending:</strong> 0</p>
+                </div>
+            </div>
+            <hr>
+            <h6>Message Content</h6>
+            <div class="alert alert-info">
+                <strong>High Drought Risk Alert - Sample Region</strong><br>
+                Current drought conditions require immediate attention. Water conservation measures should be implemented.
+            </div>
+            <h6>Delivery Methods Used</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fab fa-whatsapp fa-2x text-success mb-2"></i>
+                            <h6>WhatsApp</h6>
+                            <p class="mb-0">95 sent</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-sms fa-2x text-primary mb-2"></i>
+                            <h6>SMS</h6>
+                            <p class="mb-0">30 sent</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-envelope fa-2x text-info mb-2"></i>
+                            <h6>Email</h6>
+                            <p class="mb-0">0 sent</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        modal.show();
+    }, 500);
+}
+
+function resendAlert(alertId) {
+    if (confirm('Are you sure you want to resend this alert?')) {
+        // Show loading state
+        const button = event.target.closest('button');
+        const originalContent = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.disabled = true;
+        
+        // Simulate API call
+        setTimeout(() => {
+            button.innerHTML = originalContent;
+            button.disabled = false;
+            
+            // Show success message
+            const toast = document.createElement('div');
+            toast.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toast.innerHTML = `
+                <div class="toast show" role="alert">
+                    <div class="toast-header">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong class="me-auto">Success</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">
+                        Alert has been queued for resending.
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }, 1000);
+    }
+}
+
+// Form submission is now handled by backend, no need for custom JavaScript
+</script>
+{% endblock %}

@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Leaflet CSS imports */
+@import '~leaflet/dist/leaflet.css';
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8f9fa;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Custom styles for the drought monitoring system */
+.metric-card {
+  @apply bg-white rounded-lg p-6 text-center shadow-md hover:shadow-lg transition-shadow duration-200;
+}
+
+.alert-item {
+  @apply border-l-4 border-orange-400 bg-white rounded-r-lg p-4 mb-3 shadow-sm;
+}
+
+.risk-badge {
+  @apply px-3 py-1 rounded-full text-xs font-semibold uppercase;
+}
+
+.risk-very-low {
+  @apply bg-green-100 text-green-800;
+}
+
+.risk-low {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.risk-moderate {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.risk-high {
+  @apply bg-red-100 text-red-800;
+}
+
+.risk-very-high {
+  @apply bg-red-200 text-red-900;
+}
+
+.risk-extreme {
+  @apply bg-red-900 text-white;
+}

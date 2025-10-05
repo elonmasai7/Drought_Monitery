@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management - Drought Warning System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="mb-0">
+            <i class="fas fa-users me-2"></i>
+            User Management
+        </h1>
+        <p class="text-muted">Manage system users and their permissions</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'dashboard:home' %}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+            <i class="fas fa-user-plus me-2"></i>Add User
+        </button>
+    </div>
+</div>
+
+<!-- User Statistics -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="metric-card text-center">
+            <div class="metric-value text-primary">{{ total_users }}</div>
+            <div class="metric-label">Total Users</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="metric-card text-center">
+            <div class="metric-value text-success">{{ farmer_users }}</div>
+            <div class="metric-label">Farmers</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="metric-card text-center">
+            <div class="metric-value text-info">{{ extension_officers }}</div>
+            <div class="metric-label">Extension Officers</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="metric-card text-center">
+            <div class="metric-value text-warning">{{ admin_users }}</div>
+            <div class="metric-label">Administrators</div>
+        </div>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">System Users</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>User Type</th>
+                                <th>Region</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">
+                                                    {{ user.get_full_name|default:user.username }}
+                                                </div>
+                                                <small class="text-muted">@{{ user.username }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if user.email %}
+                                            <a href="mailto:{{ user.email }}">{{ user.email }}</a>
+                                        {% else %}
+                                            <span class="text-muted">No email</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.is_superuser %}
+                                            <span class="badge bg-danger">Superuser</span>
+                                        {% elif user.is_staff %}
+                                            <span class="badge bg-warning">Admin</span>
+                                        {% elif user.userprofile.user_type == 'extension_officer' %}
+                                            <span class="badge bg-info">Extension Officer</span>
+                                        {% elif user.userprofile.user_type == 'farmer' %}
+                                            <span class="badge bg-success">Farmer</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.userprofile.region %}
+                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                            {{ user.userprofile.region.name }}
+                                        {% else %}
+                                            <span class="text-muted">No region</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div>{{ user.date_joined|date:"M d, Y" }}</div>
+                                        <small class="text-muted">{{ user.date_joined|timesince }} ago</small>
+                                    </td>
+                                    <td>
+                                        {% if user.last_login %}
+                                            <div>{{ user.last_login|date:"M d, Y" }}</div>
+                                            <small class="text-muted">{{ user.last_login|timesince }} ago</small>
+                                        {% else %}
+                                            <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" onclick="editUser({{ user.id }})">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            {% if not user.is_superuser %}
+                                                <button class="btn btn-outline-secondary" onclick="toggleUserStatus({{ user.id }}, {{ user.is_active|yesno:'true,false' }})">
+                                                    {% if user.is_active %}
+                                                        <i class="fas fa-user-slash"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-user-check"></i>
+                                                    {% endif %}
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                        <h5>No users found</h5>
+                                        <p class="text-muted">No users have been registered yet.</p>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create User Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createUserForm">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" name="username" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" name="first_name">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" name="last_name">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">User Type</label>
+                        <select class="form-select" name="user_type" required>
+                            <option value="farmer">Farmer</option>
+                            <option value="extension_officer">Extension Officer</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" name="confirm_password" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createUser()">
+                    <i class="fas fa-user-plus me-2"></i>Create User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="editUserContent">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function createUser() {
+    const form = document.getElementById('createUserForm');
+    const formData = new FormData(form);
+    
+    // Validate form
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    // Check password confirmation
+    const password = formData.get('password');
+    const confirmPassword = formData.get('confirm_password');
+    
+    if (password !== confirmPassword) {
+        alert('Passwords do not match!');
+        return;
+    }
+    
+    // Show loading state
+    const button = event.target;
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+    button.disabled = true;
+    
+    // Simulate API call (in real implementation, this would be an AJAX request)
+    setTimeout(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+        
+        // Close modal and reset form
+        const modal = bootstrap.Modal.getInstance(document.getElementById('createUserModal'));
+        modal.hide();
+        form.reset();
+        
+        // Show success message and reload page
+        alert('User created successfully!');
+        location.reload();
+    }, 1500);
+}
+
+function editUser(userId) {
+    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    
+    // Load user details
+    document.getElementById('editUserContent').innerHTML = 
+        '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading user details...</div>';
+    
+    modal.show();
+    
+    // Simulate loading user data
+    setTimeout(() => {
+        document.getElementById('editUserContent').innerHTML = `
+            <form id="editUserForm${userId}">
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-control" value="user${userId}" readonly>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control" name="first_name" value="John">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control" name="last_name" value="Doe">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" name="email" value="user${userId}@example.com">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">User Type</label>
+                    <select class="form-select" name="user_type">
+                        <option value="farmer" selected>Farmer</option>
+                        <option value="extension_officer">Extension Officer</option>
+                        <option value="admin">Administrator</option>
+                    </select>
+                </div>
+                <div class="text-end">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="updateUser(${userId})">
+                        <i class="fas fa-save me-2"></i>Update User
+                    </button>
+                </div>
+            </form>
+        `;
+    }, 500);
+}
+
+function updateUser(userId) {
+    const button = event.target;
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+    button.disabled = true;
+    
+    // Simulate API call
+    setTimeout(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+        modal.hide();
+        
+        // Show success message and reload page
+        alert('User updated successfully!');
+        location.reload();
+    }, 1000);
+}
+
+function toggleUserStatus(userId, isActive) {
+    const action = isActive ? 'deactivate' : 'activate';
+    
+    if (confirm(`Are you sure you want to ${action} this user?`)) {
+        // Simulate API call
+        alert(`User ${action}d successfully!`);
+        location.reload();
+    }
+}
+</script>
+{% endblock %}
