@@ -1,6 +1,6 @@
 # 🌦️ Drought Warning System
 
-A comprehensive **Farmer-Centric Drought & Water Stress Early Warning System** built with Django that integrates satellite data, weather information, and AI/ML models to provide timely drought alerts through multiple channels including web dashboard,USSD service, and WhatsApp notifications.
+A comprehensive **Farmer-Centric Drought & Water Stress Early Warning System** built with Django that integrates satellite data, weather information, and AI/ML models to provide timely drought alerts through multiple channels including web dashboard,USSD service and WhatsApp notifications.
 
 ## 🎯 Features
 
