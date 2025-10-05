@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.django",
+    "ms-python.pylint",
+    "ms-toolsai.jupyter",
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "eamodio.gitlens",
+    "ms-vscode-remote.remote-containers",
+    "humao.rest-client",
+    "formulahendry.auto-rename-tag",
+    "ms-python.black-formatter"
+  ]
+}
