@@ -95,7 +95,7 @@ DATABASES = {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv("DB_NAME", "drought_warning_db"),
         "USER": os.getenv("POSTGRE_SQL_USER", "postgres"),
-        "PASSWORD": os.getenv("POSTGRE_SQL_PASSWORD", "rqBasHvT"),
+        "PASSWORD": os.getenv("POSTGRE_SQL_PASSWORD", "JACK"),
         "HOST": os.getenv("POSTGRE_SQL_INNER_HOST", "127.0.0.1"),
         "PORT": os.getenv("POSTGRE_SQL_INNER_PORT", "5432"),
     }
