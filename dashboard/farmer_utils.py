@@ -1,7 +1,7 @@
 """
 Farmer-specific utility functions for the dashboard
 """
-from django.db.models import Q, Avg, Count
+from django.db.models import Q, Avg, Count, Max
 from django.utils import timezone
 from datetime import timedelta
 
@@ -80,10 +80,10 @@ def get_regional_dashboard_data(region, since_date):
         region=region,
         date__gte=since_date
     ).aggregate(
-        avg_temperature=Avg('temperature'),
-        avg_humidity=Avg('humidity'),
-        total_rainfall=Avg('rainfall'),
-        avg_wind_speed=Avg('wind_speed')
+        avg_temperature=Avg('temperature_avg'),
+        avg_humidity=Avg('humidity_percent'),
+        total_rainfall=Avg('precipitation_mm'),
+        avg_wind_speed=Avg('wind_speed_kmh')
     )
     
     # NDVI data (vegetation health)
@@ -92,7 +92,7 @@ def get_regional_dashboard_data(region, since_date):
         date__gte=since_date
     ).aggregate(
         avg_ndvi=Avg('ndvi_value'),
-        latest_date=timezone.models.Max('date')
+        latest_date=Max('date')
     )
     
     # Soil moisture data
@@ -100,8 +100,8 @@ def get_regional_dashboard_data(region, since_date):
         region=region,
         date__gte=since_date
     ).aggregate(
-        avg_moisture=Avg('moisture_level'),
-        latest_date=timezone.models.Max('date')
+        avg_moisture=Avg('moisture_percent'),
+        latest_date=Max('date')
     )
     
     return {
@@ -174,7 +174,8 @@ def get_farmer_recommendations(user_profile, regional_data):
     
     # Weather-based recommendations
     weather = regional_data.get('weather', {})
-    if weather.get('total_rainfall', 0) < 10:  # Less than 10mm in the past month
+    total_rainfall = weather.get('total_rainfall') or 0
+    if total_rainfall < 10:  # Less than 10mm in the past month
         recommendations.append({
             'type': 'warning',
             'title': 'Low Rainfall Alert',

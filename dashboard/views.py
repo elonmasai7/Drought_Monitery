@@ -13,7 +13,7 @@ import json
 from core.models import Region, UserProfile
 from core.permissions import (
     admin_required, farmer_required, extension_officer_required,
-    role_required, api_role_required, get_user_role, 
+    role_required, api_role_required, permission_required, get_user_role, 
     smart_redirect_after_login
 )
 from drought_data.models import NDVIData, SoilMoistureData, WeatherData, DroughtRiskAssessment
@@ -462,10 +462,10 @@ def login_view(request):
             # Verify user role matches the selected role
             user_profile = getattr(user, 'userprofile', None)
             
-            # For admin role, check if user is staff or has admin profile
+            # For admin role, check if user is staff, superuser, admin, or extension officer
             if user_role == 'admin':
                 if not (user.is_staff or user.is_superuser or 
-                       (user_profile and user_profile.user_type == 'admin')):
+                       (user_profile and user_profile.user_type in ['admin', 'extension_officer'])):
                     messages.error(request, 'You do not have admin privileges. Please use the farmer login.')
                     return render(request, 'registration/role_based_login.html')
             
@@ -545,7 +545,7 @@ def profile_view(request):
     return render(request, 'dashboard/profile.html', context)
 
 
-@admin_required
+@permission_required('admin_dashboard')
 def admin_user_management(request):
     """
     Admin view for managing users
@@ -569,7 +569,7 @@ def admin_user_management(request):
     return render(request, 'dashboard/admin_users.html', context)
 
 
-@admin_required
+@permission_required('admin_dashboard')
 def create_alert(request):
     """
     Create and send a new alert
@@ -643,7 +643,7 @@ def create_alert(request):
     return redirect('dashboard:alerts')
 
 
-@admin_required
+@permission_required('admin_dashboard')
 def test_alert_services(request):
     """
     Test alert messaging services
@@ -718,7 +718,7 @@ This is a test message to verify alert delivery systems are working correctly.""
     
     return redirect('dashboard:alerts')
 
-@admin_required
+@permission_required('admin_dashboard')
 def admin_dashboard(request):
     """
     Enhanced admin dashboard with comprehensive system overview
@@ -750,7 +750,7 @@ def admin_dashboard(request):
     return render(request, 'dashboard/enhanced_admin_dashboard.html', context)
 
 
-@admin_required
+@permission_required('admin_dashboard')
 def admin_alert_management(request):
     """
     Comprehensive alert management interface
@@ -771,7 +771,7 @@ def admin_alert_management(request):
     return render(request, 'dashboard/admin_alerts.html', context)
 
 
-@admin_required
+@permission_required('admin_dashboard')
 def admin_farmer_management(request):
     """
     Comprehensive farmer and user management interface
@@ -793,7 +793,7 @@ def admin_farmer_management(request):
     return render(request, 'dashboard/admin_farmers.html', context)
 
 
-@admin_required
+@permission_required('admin_dashboard')
 def admin_ussd_analytics(request):
     """
     USSD system analytics and management
@@ -814,7 +814,7 @@ def admin_ussd_analytics(request):
     return render(request, 'dashboard/admin_ussd.html', context)
 
 
-@admin_required
+@permission_required('admin_dashboard')
 def admin_data_management(request):
     """
     Data management and system health monitoring
@@ -839,7 +839,7 @@ def admin_data_management(request):
     return render(request, 'dashboard/admin_data.html', context)
 
 
-@admin_required
+@permission_required('admin_dashboard')
 def admin_bulk_alert(request):
     """
     Create and send bulk alerts to multiple regions
@@ -912,7 +912,7 @@ def admin_bulk_alert(request):
     return redirect('dashboard:admin_alerts')
 
 
-@admin_required
+@permission_required('admin_dashboard')
 def admin_export_data(request):
     """
     Export system data to CSV/Excel

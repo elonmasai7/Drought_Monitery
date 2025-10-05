@@ -2,7 +2,7 @@
 Administrative utility functions for the dashboard
 """
 from django.contrib.auth.models import User
-from django.db.models import Count, Q, Avg
+from django.db.models import Count, Q, Avg, Max
 from django.utils import timezone
 from datetime import timedelta
 
@@ -136,17 +136,17 @@ def get_data_quality_report():
     
     # Data freshness checks
     latest_weather = WeatherData.objects.aggregate(
-        latest_date=timezone.models.Max('date'),
+        latest_date=Max('date'),
         count_last_week=Count('id', filter=Q(date__gte=week_ago))
     )
     
     latest_ndvi = NDVIData.objects.aggregate(
-        latest_date=timezone.models.Max('date'),
+        latest_date=Max('date'),
         count_last_month=Count('id', filter=Q(date__gte=today - timedelta(days=30)))
     )
     
     latest_soil = SoilMoistureData.objects.aggregate(
-        latest_date=timezone.models.Max('date'),
+        latest_date=Max('date'),
         count_last_week=Count('id', filter=Q(date__gte=week_ago))
     )
     
