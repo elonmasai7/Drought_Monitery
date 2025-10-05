@@ -1,0 +1,395 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Enhanced Admin Dashboard - Drought Warning System{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+    :root {
+        --admin-primary: #2c5282;
+        --admin-secondary: #4a90c2;
+        --admin-success: #28a745;
+        --admin-warning: #ffc107;
+        --admin-danger: #dc3545;
+        --admin-info: #17a2b8;
+    }
+    
+    .admin-sidebar {
+        background: linear-gradient(135deg, var(--admin-primary), var(--admin-secondary));
+        min-height: 100vh;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+    
+    .admin-content {
+        background: #f8f9fa;
+        min-height: 100vh;
+    }
+    
+    .metric-card {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    
+    .metric-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .sidebar-nav .nav-link {
+        color: rgba(255,255,255,0.8);
+        transition: all 0.3s ease;
+        border-radius: 10px;
+        margin: 5px 15px;
+    }
+    
+    .sidebar-nav .nav-link:hover,
+    .sidebar-nav .nav-link.active {
+        color: white;
+        background: rgba(255,255,255,0.2);
+        transform: translateX(5px);
+    }
+    
+    .quick-action-btn {
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .quick-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        border-color: var(--admin-primary);
+    }
+    
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .admin-header {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .role-badge {
+        background: linear-gradient(45deg, var(--admin-primary), var(--admin-secondary));
+        color: white;
+        border-radius: 20px;
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="row g-0">
+        <!-- Admin Sidebar -->
+        <div class="col-lg-2 admin-sidebar">
+            <div class="p-4">
+                <!-- Admin Profile Section -->
+                <div class="text-center mb-4">
+                    <div class="bg-white rounded-circle mx-auto mb-3" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-user-shield fa-2x text-primary"></i>
+                    </div>
+                    <h5 class="text-white mb-1">{{ user.get_full_name|default:user.username }}</h5>
+                    <span class="role-badge">
+                        <i class="fas fa-crown me-1"></i>Administrator
+                    </span>
+                </div>
+                
+                <!-- Navigation Menu -->
+                <nav class="sidebar-nav">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{% url 'dashboard:admin_dashboard' %}">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard:admin_users' %}">
+                                <i class="fas fa-users me-2"></i>User Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard:admin_alerts' %}">
+                                <i class="fas fa-bell me-2"></i>Alert Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard:admin_farmers' %}">
+                                <i class="fas fa-seedling me-2"></i>Farmer Support
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard:admin_data' %}">
+                                <i class="fas fa-database me-2"></i>Data Management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard:analytics' %}">
+                                <i class="fas fa-chart-line me-2"></i>Analytics
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                
+                <!-- Quick Actions -->
+                <div class="mt-4">
+                    <h6 class="text-white-50 text-uppercase small mb-3">Quick Actions</h6>
+                    <a href="{% url 'dashboard:admin_bulk_alert' %}" class="btn btn-outline-light btn-sm d-block mb-2">
+                        <i class="fas fa-broadcast-tower me-2"></i>Send Alert
+                    </a>
+                    <a href="{% url 'dashboard:admin_export' %}" class="btn btn-outline-light btn-sm d-block mb-2">
+                        <i class="fas fa-download me-2"></i>Export Data
+                    </a>
+                    <a href="/dashboard/react/" class="btn btn-outline-light btn-sm d-block">
+                        <i class="fas fa-eye me-2"></i>Farmer View
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-lg-10 admin-content">
+            <!-- Header -->
+            <div class="admin-header p-4 m-3">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h1 class="h3 mb-0 text-dark">System Overview</h1>
+                        <p class="text-muted mb-0">Monitor and manage your drought warning system</p>
+                    </div>
+                    <div class="col-auto">
+                        <span class="badge bg-success fs-6">System Online</span>
+                        <small class="text-muted ms-2">Last updated: {{ "now"|date:"H:i" }}</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4">
+                <!-- System Metrics -->
+                <div class="row mb-4">
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="card metric-card h-100">
+                            <div class="card-body text-center">
+                                <div class="metric-icon bg-primary mb-3 mx-auto">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h3 class="mb-1">{{ overview.users.total }}</h3>
+                                <p class="text-muted mb-2">Total Users</p>
+                                <div class="d-flex justify-content-between text-sm">
+                                    <span class="status-badge bg-info text-white">{{ overview.users.farmers }} Farmers</span>
+                                    <span class="status-badge bg-warning text-dark">{{ overview.users.admins }} Admins</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="card metric-card h-100">
+                            <div class="card-body text-center">
+                                <div class="metric-icon bg-success mb-3 mx-auto">
+                                    <i class="fas fa-bell"></i>
+                                </div>
+                                <h3 class="mb-1">{{ overview.alerts.total }}</h3>
+                                <p class="text-muted mb-2">Total Alerts</p>
+                                <div class="d-flex justify-content-between text-sm">
+                                    <span class="status-badge bg-success text-white">{{ overview.alerts.sent_today }} Today</span>
+                                    <span class="status-badge bg-warning text-dark">{{ overview.alerts.pending }} Pending</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="card metric-card h-100">
+                            <div class="card-body text-center">
+                                <div class="metric-icon bg-warning mb-3 mx-auto">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                                <h3 class="mb-1">{{ overview.data.weather_records }}</h3>
+                                <p class="text-muted mb-2">Weather Records</p>
+                                <div class="d-flex justify-content-between text-sm">
+                                    <span class="status-badge bg-info text-white">{{ overview.data.latest_weather }} This Week</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="card metric-card h-100">
+                            <div class="card-body text-center">
+                                <div class="metric-icon bg-info mb-3 mx-auto">
+                                    <i class="fas fa-mobile-alt"></i>
+                                </div>
+                                <h3 class="mb-1">{{ overview.ussd.total_sessions }}</h3>
+                                <p class="text-muted mb-2">USSD Sessions</p>
+                                <div class="d-flex justify-content-between text-sm">
+                                    <span class="status-badge bg-success text-white">{{ overview.ussd.active_sessions }} Active</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Management Tools -->
+                <div class="row mb-4">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">System Management</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <a href="{% url 'dashboard:create_alert' %}" class="quick-action-btn btn btn-primary w-100 p-3">
+                                            <i class="fas fa-exclamation-triangle fa-2x mb-2 d-block"></i>
+                                            <strong>Send Emergency Alert</strong>
+                                            <small class="d-block text-muted">Broadcast to all farmers</small>
+                                        </a>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <a href="{% url 'dashboard:admin_users' %}" class="quick-action-btn btn btn-info w-100 p-3">
+                                            <i class="fas fa-user-plus fa-2x mb-2 d-block"></i>
+                                            <strong>Manage Users</strong>
+                                            <small class="d-block text-muted">Add/edit user accounts</small>
+                                        </a>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <a href="{% url 'dashboard:admin_export' %}" class="quick-action-btn btn btn-success w-100 p-3">
+                                            <i class="fas fa-file-export fa-2x mb-2 d-block"></i>
+                                            <strong>Export Reports</strong>
+                                            <small class="d-block text-muted">Download system data</small>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">System Health</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-server fa-2x text-success"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-0">Database</h6>
+                                        <span class="badge bg-success">Healthy</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-wifi fa-2x text-success"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-0">API Services</h6>
+                                        <span class="badge bg-success">Online</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-envelope fa-2x text-warning"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-0">Alert Services</h6>
+                                        <span class="badge bg-warning">Limited</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">Recent User Activity</h5>
+                                <a href="{% url 'dashboard:admin_users' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    {% for user in recent_users|slice:":5" %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                            <small class="text-muted d-block">{{ user.userprofile.get_user_type_display }}</small>
+                                        </div>
+                                        <small class="text-muted">{{ user.last_login|timesince }} ago</small>
+                                    </div>
+                                    {% empty %}
+                                    <p class="text-muted text-center">No recent user activity</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">Recent Alerts</h5>
+                                <a href="{% url 'dashboard:admin_alerts' %}" class="btn btn-sm btn-outline-success">View All</a>
+                            </div>
+                            <div class="card-body">
+                                <div class="list-group list-group-flush">
+                                    {% for alert in recent_alerts|slice:":5" %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong>{{ alert.title }}</strong>
+                                            <span class="badge bg-{{ alert.severity_level|default:'info' }}">{{ alert.get_severity_level_display }}</span>
+                                        </div>
+                                        <small class="text-muted">{{ alert.region.name }} • {{ alert.created_at|timesince }} ago</small>
+                                    </div>
+                                    {% empty %}
+                                    <p class="text-muted text-center">No recent alerts</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

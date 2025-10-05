@@ -5,6 +5,8 @@ import WelcomeCard from './components/WelcomeCard';
 import MapView from './components/MapView';
 import AlertsPanel from './components/AlertsPanel';
 import LocationManager from './components/LocationManager';
+import RoleBasedQuickActions from './components/RoleBasedQuickActions';
+import FarmerRecommendations from './components/FarmerRecommendations';
 import './App.css';
 
 // Configure axios defaults
@@ -123,6 +125,11 @@ function App() {
           <WelcomeCard user={user} userLocation={userLocation} />
         </div>
 
+        {/* Role-based Quick Actions */}
+        <div className="mb-6">
+          <RoleBasedQuickActions userRole={user?.user_type} currentUser={user} />
+        </div>
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Column - Location Manager */}
@@ -175,37 +182,48 @@ function App() {
           {/* Main Content Area */}
           <div className="lg:col-span-2">
             {currentView === 'dashboard' && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Farm Overview</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="metric-card">
-                    <div className="text-3xl font-bold text-green-600 mb-2">Good</div>
-                    <div className="text-gray-600">Crop Health</div>
+              <div className="space-y-6">
+                {/* Farm Overview Metrics */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h2 className="text-xl font-bold text-gray-800 mb-4">Farm Overview</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="metric-card">
+                      <div className="text-3xl font-bold text-green-600 mb-2">Good</div>
+                      <div className="text-gray-600">Crop Health</div>
+                    </div>
+                    <div className="metric-card">
+                      <div className="text-3xl font-bold text-blue-600 mb-2">65%</div>
+                      <div className="text-gray-600">Soil Moisture</div>
+                    </div>
+                    <div className="metric-card">
+                      <div className="text-3xl font-bold text-yellow-600 mb-2">Medium</div>
+                      <div className="text-gray-600">Drought Risk</div>
+                    </div>
+                    <div className="metric-card">
+                      <div className="text-3xl font-bold text-purple-600 mb-2">7.2</div>
+                      <div className="text-gray-600">Soil pH</div>
+                    </div>
                   </div>
-                  <div className="metric-card">
-                    <div className="text-3xl font-bold text-blue-600 mb-2">65%</div>
-                    <div className="text-gray-600">Soil Moisture</div>
-                  </div>
-                  <div className="metric-card">
-                    <div className="text-3xl font-bold text-yellow-600 mb-2">Medium</div>
-                    <div className="text-gray-600">Drought Risk</div>
-                  </div>
-                  <div className="metric-card">
-                    <div className="text-3xl font-bold text-purple-600 mb-2">7.2</div>
-                    <div className="text-gray-600">Soil pH</div>
+                  
+                  {/* Quick Map Preview */}
+                  <div className="mb-4">
+                    <h3 className="font-semibold text-gray-800 mb-3">Location Map</h3>
+                    <div className="h-64">
+                      <MapView 
+                        userLocation={userLocation} 
+                        onLocationUpdate={handleLocationUpdate}
+                      />
+                    </div>
                   </div>
                 </div>
-                
-                {/* Quick Map Preview */}
-                <div className="mb-4">
-                  <h3 className="font-semibold text-gray-800 mb-3">Location Map</h3>
-                  <div className="h-64">
-                    <MapView 
-                      userLocation={userLocation} 
-                      onLocationUpdate={handleLocationUpdate}
-                    />
-                  </div>
-                </div>
+
+                {/* Farmer-specific Recommendations (only for farmers) */}
+                {user?.user_type === 'farmer' && (
+                  <FarmerRecommendations 
+                    userLocation={userLocation}
+                    currentUser={user}
+                  />
+                )}
               </div>
             )}
 

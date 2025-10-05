@@ -11,6 +11,11 @@ from datetime import datetime, timedelta
 import json
 
 from core.models import Region, UserProfile
+from core.permissions import (
+    admin_required, farmer_required, extension_officer_required,
+    role_required, api_role_required, get_user_role, 
+    smart_redirect_after_login
+)
 from drought_data.models import NDVIData, SoilMoistureData, WeatherData, DroughtRiskAssessment
 from farmers.models import FarmerProfile
 from alerts.models import Alert, AlertDelivery
@@ -19,9 +24,28 @@ from alerts.models import Alert, AlertDelivery
 @login_required
 def react_dashboard(request):
     """
-    React-based enhanced dashboard view
+    React-based enhanced dashboard view with role-specific features
     """
-    return render(request, 'dashboard/react_dashboard.html')
+    from .farmer_utils import get_farmer_dashboard_data
+    
+    # Get user role
+    user_role = 'farmer'  # default
+    if hasattr(request.user, 'userprofile'):
+        user_role = request.user.userprofile.user_type
+    elif request.user.is_staff or request.user.is_superuser:
+        user_role = 'admin'
+    
+    # Get role-specific dashboard data
+    dashboard_data = {}
+    if user_role == 'farmer':
+        dashboard_data = get_farmer_dashboard_data(request.user)
+    
+    context = {
+        'user_role': user_role,
+        'dashboard_data': dashboard_data,
+    }
+    
+    return render(request, 'dashboard/react_dashboard.html', context)
 
 
 @login_required
@@ -399,27 +423,70 @@ def is_extension_officer(user):
         return False
 
 
+def redirect_based_on_role(user):
+    """
+    Redirect user to appropriate dashboard based on their role
+    """
+    if user.is_staff or user.is_superuser:
+        return redirect('dashboard:admin_dashboard')
+    
+    try:
+        user_profile = UserProfile.objects.get(user=user)
+        if user_profile.user_type == 'admin':
+            return redirect('dashboard:admin_dashboard')
+        elif user_profile.user_type == 'extension_officer':
+            return redirect('dashboard:admin_dashboard')  # Extension officers use admin dashboard
+        else:
+            return redirect('dashboard:react_dashboard')  # Farmers use React dashboard
+    except UserProfile.DoesNotExist:
+        # Default to farmer dashboard if no profile exists
+        return redirect('dashboard:react_dashboard')
+
+
 # Authentication Views
 def login_view(request):
     """
-    Custom login view
+    Custom role-based login view
     """
     if request.user.is_authenticated:
-        return redirect('dashboard_home')
+        # Redirect based on user role
+        return redirect_based_on_role(request.user)
     
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
+        user_role = request.POST.get('user_role', 'farmer')  # Default to farmer
         
         user = authenticate(request, username=username, password=password)
         if user is not None:
+            # Verify user role matches the selected role
+            user_profile = getattr(user, 'userprofile', None)
+            
+            # For admin role, check if user is staff or has admin profile
+            if user_role == 'admin':
+                if not (user.is_staff or user.is_superuser or 
+                       (user_profile and user_profile.user_type == 'admin')):
+                    messages.error(request, 'You do not have admin privileges. Please use the farmer login.')
+                    return render(request, 'registration/role_based_login.html')
+            
+            # For farmer role
+            elif user_role == 'farmer':
+                if user.is_staff or user.is_superuser:
+                    messages.info(request, 'Admin users should use the admin login.')
+                    return render(request, 'registration/role_based_login.html')
+            
             login(request, user)
-            next_url = request.GET.get('next', '/dashboard/')
-            return redirect(next_url)
+            
+            # Redirect based on role or next parameter
+            next_url = request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
+            else:
+                return redirect(smart_redirect_after_login(user))
         else:
             messages.error(request, 'Invalid username or password.')
     
-    return render(request, 'registration/login.html')
+    return render(request, 'registration/role_based_login.html')
 
 
 def logout_view(request):
@@ -428,7 +495,7 @@ def logout_view(request):
     """
     logout(request)
     messages.success(request, 'You have been logged out successfully.')
-    return redirect('login')
+    return redirect('dashboard:login')
 
 
 @login_required
@@ -478,7 +545,7 @@ def profile_view(request):
     return render(request, 'dashboard/profile.html', context)
 
 
-@user_passes_test(is_admin_user)
+@admin_required
 def admin_user_management(request):
     """
     Admin view for managing users
@@ -502,7 +569,7 @@ def admin_user_management(request):
     return render(request, 'dashboard/admin_users.html', context)
 
 
-@user_passes_test(is_admin_user)
+@admin_required
 def create_alert(request):
     """
     Create and send a new alert
@@ -576,7 +643,7 @@ def create_alert(request):
     return redirect('dashboard:alerts')
 
 
-@user_passes_test(is_admin_user)
+@admin_required
 def test_alert_services(request):
     """
     Test alert messaging services
@@ -651,26 +718,39 @@ This is a test message to verify alert delivery systems are working correctly.""
     
     return redirect('dashboard:alerts')
 
-@user_passes_test(is_admin_user)
+@admin_required
 def admin_dashboard(request):
     """
     Enhanced admin dashboard with comprehensive system overview
     """
     from .admin_utils import get_system_overview, get_data_quality_report
+    from django.contrib.auth.models import User
+    from alerts.models import Alert
     
     overview = get_system_overview()
     data_quality = get_data_quality_report()
     
+    # Get recent users for activity display
+    recent_users = User.objects.select_related('userprofile').filter(
+        last_login__isnull=False
+    ).order_by('-last_login')[:10]
+    
+    # Get recent alerts
+    recent_alerts = Alert.objects.select_related('region').order_by('-created_at')[:10]
+    
     context = {
         'overview': overview,
         'data_quality': data_quality,
+        'recent_users': recent_users,
+        'recent_alerts': recent_alerts,
         'page_title': 'Admin Dashboard',
     }
     
-    return render(request, 'dashboard/admin_dashboard.html', context)
+    # Use enhanced template for better admin experience
+    return render(request, 'dashboard/enhanced_admin_dashboard.html', context)
 
 
-@user_passes_test(is_admin_user)
+@admin_required
 def admin_alert_management(request):
     """
     Comprehensive alert management interface
@@ -691,7 +771,7 @@ def admin_alert_management(request):
     return render(request, 'dashboard/admin_alerts.html', context)
 
 
-@user_passes_test(is_admin_user)
+@admin_required
 def admin_farmer_management(request):
     """
     Comprehensive farmer and user management interface
@@ -713,7 +793,7 @@ def admin_farmer_management(request):
     return render(request, 'dashboard/admin_farmers.html', context)
 
 
-@user_passes_test(is_admin_user)
+@admin_required
 def admin_ussd_analytics(request):
     """
     USSD system analytics and management
@@ -734,7 +814,7 @@ def admin_ussd_analytics(request):
     return render(request, 'dashboard/admin_ussd.html', context)
 
 
-@user_passes_test(is_admin_user)
+@admin_required
 def admin_data_management(request):
     """
     Data management and system health monitoring
@@ -759,7 +839,7 @@ def admin_data_management(request):
     return render(request, 'dashboard/admin_data.html', context)
 
 
-@user_passes_test(is_admin_user)
+@admin_required
 def admin_bulk_alert(request):
     """
     Create and send bulk alerts to multiple regions
@@ -832,7 +912,7 @@ def admin_bulk_alert(request):
     return redirect('dashboard:admin_alerts')
 
 
-@user_passes_test(is_admin_user) 
+@admin_required
 def admin_export_data(request):
     """
     Export system data to CSV/Excel

@@ -117,6 +117,31 @@ const Navbar = ({ user, onLogout, unreadAlertsCount = 0 }) => {
     return `${greeting}, ${name}`;
   };
 
+  const getUserRole = () => {
+    if (!currentUser) return 'Farmer';
+    return currentUser.user_type || 'farmer';
+  };
+
+  const getRoleDisplayName = () => {
+    const role = getUserRole();
+    switch (role) {
+      case 'admin': return 'Administrator';
+      case 'extension_officer': return 'Extension Officer';
+      case 'farmer': return 'Farmer';
+      default: return 'Farmer';
+    }
+  };
+
+  const getRoleColor = () => {
+    const role = getUserRole();
+    switch (role) {
+      case 'admin': return 'bg-blue-100 text-blue-800';
+      case 'extension_officer': return 'bg-purple-100 text-purple-800';
+      case 'farmer': return 'bg-green-100 text-green-800';
+      default: return 'bg-green-100 text-green-800';
+    }
+  };
+
   return (
     <>
       <nav className="bg-gradient-to-r from-primary-600 to-secondary-600 shadow-lg relative z-50">
@@ -154,7 +179,12 @@ const Navbar = ({ user, onLogout, unreadAlertsCount = 0 }) => {
             <div className="flex items-center space-x-4">
               {/* Welcome Message */}
               <div className="hidden sm:block text-gray-200 text-sm">
-                {getWelcomeMessage()}
+                <div className="flex flex-col items-end">
+                  <span>{getWelcomeMessage()}</span>
+                  <span className={`text-xs px-2 py-1 rounded-full mt-1 ${getRoleColor()}`}>
+                    {getRoleDisplayName()}
+                  </span>
+                </div>
               </div>
 
               {/* Notifications Bell */}
@@ -215,7 +245,12 @@ const Navbar = ({ user, onLogout, unreadAlertsCount = 0 }) => {
             <div className="px-2 pt-2 pb-3 space-y-1">
               {/* Welcome message for mobile */}
               <div className="px-3 py-2 text-gray-200 text-sm border-b border-primary-600 mb-2">
-                {getWelcomeMessage()}
+                <div className="flex flex-col">
+                  <span>{getWelcomeMessage()}</span>
+                  <span className={`text-xs px-2 py-1 rounded-full mt-1 self-start ${getRoleColor()}`}>
+                    {getRoleDisplayName()}
+                  </span>
+                </div>
               </div>
               
               {navigationItems.map((item) => {

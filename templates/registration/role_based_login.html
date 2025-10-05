@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Drought Warning System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #2d5a27;
+            --light-green: #4a7c59;
+            --accent-green: #6b8e67;
+            --warm-beige: #f5f1e8;
+            --earth-brown: #8b6f47;
+            --admin-blue: #2c5282;
+            --admin-light-blue: #4a90c2;
+            --farmer-green: #2d5a27;
+            --farmer-light-green: #4a7c59;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--warm-beige) 0%, #e8f5e8 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .login-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .role-selector {
+            margin-bottom: 2rem;
+        }
+        
+        .role-tab {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+        
+        .role-tab:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        
+        .role-tab.active.farmer {
+            border-color: var(--farmer-green);
+            background: linear-gradient(135deg, rgba(45, 90, 39, 0.05), rgba(74, 124, 89, 0.05));
+        }
+        
+        .role-tab.active.admin {
+            border-color: var(--admin-blue);
+            background: linear-gradient(135deg, rgba(44, 82, 130, 0.05), rgba(74, 144, 194, 0.05));
+        }
+        
+        .role-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .role-icon.farmer {
+            color: var(--farmer-green);
+        }
+        
+        .role-icon.admin {
+            color: var(--admin-blue);
+        }
+        
+        .login-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .login-header {
+            padding: 2rem;
+            text-align: center;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .login-header.farmer {
+            background: linear-gradient(135deg, var(--farmer-green), var(--farmer-light-green));
+        }
+        
+        .login-header.admin {
+            background: linear-gradient(135deg, var(--admin-blue), var(--admin-light-blue));
+        }
+        
+        .login-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        
+        .login-header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+        }
+        
+        .btn-primary.farmer {
+            background: var(--farmer-green);
+            border-color: var(--farmer-green);
+            padding: 0.75rem 2rem;
+        }
+        
+        .btn-primary.farmer:hover {
+            background: var(--farmer-light-green);
+            border-color: var(--farmer-light-green);
+        }
+        
+        .btn-primary.admin {
+            background: var(--admin-blue);
+            border-color: var(--admin-blue);
+            padding: 0.75rem 2rem;
+        }
+        
+        .btn-primary.admin:hover {
+            background: var(--admin-light-blue);
+            border-color: var(--admin-light-blue);
+        }
+        
+        .form-control:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 0 0.2rem rgba(107, 142, 103, 0.25);
+        }
+        
+        .form-control:focus.admin-focus {
+            border-color: var(--admin-blue);
+            box-shadow: 0 0 0 0.2rem rgba(44, 82, 130, 0.25);
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 0.5rem 0;
+            color: #666;
+        }
+        
+        .feature-list li i {
+            margin-right: 0.5rem;
+            width: 20px;
+        }
+        
+        .demo-account {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-left: 4px solid;
+        }
+        
+        .demo-account.farmer {
+            border-left-color: var(--farmer-green);
+        }
+        
+        .demo-account.admin {
+            border-left-color: var(--admin-blue);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .alert {
+            border-radius: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .role-tab {
+                margin-bottom: 1rem;
+            }
+            
+            .login-container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="login-container">
+            <!-- Role Selection -->
+            <div class="role-selector">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="role-tab farmer active" data-role="farmer">
+                            <div class="text-center">
+                                <div class="role-icon farmer">
+                                    <i class="fas fa-seedling"></i>
+                                </div>
+                                <h3>Farmer Portal</h3>
+                                <p class="text-muted mb-3">Access your farm monitoring dashboard</p>
+                                <ul class="feature-list text-start">
+                                    <li><i class="fas fa-map-marked-alt text-success"></i>Live drought monitoring</li>
+                                    <li><i class="fas fa-bell text-success"></i>Weather alerts & warnings</li>
+                                    <li><i class="fas fa-chart-line text-success"></i>Crop health insights</li>
+                                    <li><i class="fas fa-mobile-alt text-success"></i>SMS & WhatsApp updates</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="role-tab admin" data-role="admin">
+                            <div class="text-center">
+                                <div class="role-icon admin">
+                                    <i class="fas fa-user-shield"></i>
+                                </div>
+                                <h3>Admin Portal</h3>
+                                <p class="text-muted mb-3">System management & oversight</p>
+                                <ul class="feature-list text-start">
+                                    <li><i class="fas fa-users text-primary"></i>User management</li>
+                                    <li><i class="fas fa-broadcast-tower text-primary"></i>Alert broadcasting</li>
+                                    <li><i class="fas fa-analytics text-primary"></i>System analytics</li>
+                                    <li><i class="fas fa-database text-primary"></i>Data management</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Login Form -->
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="login-card">
+                        <div class="login-header farmer" id="loginHeader">
+                            <i class="fas fa-seedling fa-2x mb-3" id="headerIcon"></i>
+                            <h1 id="headerTitle">Farmer Dashboard</h1>
+                            <p id="headerSubtitle">Monitor your farm's drought conditions</p>
+                        </div>
+                        
+                        <div class="p-4">
+                            {% if messages %}
+                                {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                            
+                            <form method="post" id="loginForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="user_role" id="userRole" value="farmer">
+                                
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">
+                                        <i class="fas fa-user me-2"></i>Username
+                                    </label>
+                                    <input type="text" class="form-control" name="username" id="username" required>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="password" class="form-label">
+                                        <i class="fas fa-lock me-2"></i>Password
+                                    </label>
+                                    <input type="password" class="form-control" name="password" id="password" required>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary farmer" id="loginBtn">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Sign In to Farmer Portal
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <!-- Demo Accounts -->
+                            <div class="demo-account farmer" id="demoAccount">
+                                <h6><i class="fas fa-info-circle me-2"></i>Demo Account</h6>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <strong>Username:</strong><br>
+                                        <code id="demoUsername">farmer</code>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong>Password:</strong><br>
+                                        <code id="demoPassword">farmer123</code>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const roleTabs = document.querySelectorAll('.role-tab');
+            const loginHeader = document.getElementById('loginHeader');
+            const headerIcon = document.getElementById('headerIcon');
+            const headerTitle = document.getElementById('headerTitle');
+            const headerSubtitle = document.getElementById('headerSubtitle');
+            const loginBtn = document.getElementById('loginBtn');
+            const userRole = document.getElementById('userRole');
+            const demoAccount = document.getElementById('demoAccount');
+            const demoUsername = document.getElementById('demoUsername');
+            const demoPassword = document.getElementById('demoPassword');
+            const formControls = document.querySelectorAll('.form-control');
+            
+            const roleConfig = {
+                farmer: {
+                    headerClass: 'farmer',
+                    btnClass: 'farmer',
+                    demoClass: 'farmer',
+                    icon: 'fas fa-seedling fa-2x mb-3',
+                    title: 'Farmer Dashboard',
+                    subtitle: 'Monitor your farm\'s drought conditions',
+                    btnText: '<i class="fas fa-sign-in-alt me-2"></i>Sign In to Farmer Portal',
+                    demoUser: 'farmer',
+                    demoPass: 'farmer123'
+                },
+                admin: {
+                    headerClass: 'admin',
+                    btnClass: 'admin',
+                    demoClass: 'admin',
+                    icon: 'fas fa-user-shield fa-2x mb-3',
+                    title: 'Admin Dashboard',
+                    subtitle: 'Manage system and monitor operations',
+                    btnText: '<i class="fas fa-sign-in-alt me-2"></i>Sign In to Admin Portal',
+                    demoUser: 'admin',
+                    demoPass: 'admin123'
+                }
+            };
+            
+            function switchRole(role) {
+                const config = roleConfig[role];
+                
+                // Update role tabs
+                roleTabs.forEach(tab => {
+                    tab.classList.remove('active');
+                    if (tab.dataset.role === role) {
+                        tab.classList.add('active');
+                    }
+                });
+                
+                // Update header
+                loginHeader.className = `login-header ${config.headerClass}`;
+                headerIcon.className = config.icon;
+                headerTitle.textContent = config.title;
+                headerSubtitle.textContent = config.subtitle;
+                
+                // Update button
+                loginBtn.className = `btn btn-primary ${config.btnClass}`;
+                loginBtn.innerHTML = config.btnText;
+                
+                // Update demo account
+                demoAccount.className = `demo-account ${config.demoClass}`;
+                demoUsername.textContent = config.demoUser;
+                demoPassword.textContent = config.demoPass;
+                
+                // Update hidden field
+                userRole.value = role;
+                
+                // Update form control focus styles
+                if (role === 'admin') {
+                    formControls.forEach(control => {
+                        control.classList.add('admin-focus');
+                    });
+                } else {
+                    formControls.forEach(control => {
+                        control.classList.remove('admin-focus');
+                    });
+                }
+            }
+            
+            // Handle role tab clicks
+            roleTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const role = this.dataset.role;
+                    switchRole(role);
+                });
+            });
+            
+            // Auto-fill demo credentials when clicked
+            demoAccount.addEventListener('click', function() {
+                const role = userRole.value;
+                const config = roleConfig[role];
+                document.getElementById('username').value = config.demoUser;
+                document.getElementById('password').value = config.demoPass;
+            });
+        });
+    </script>
+</body>
+</html>
